@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import base64
 import os
-import numpy as np # ต้องใช้ numpy สำหรับคำนวณสูตร
+import numpy as np
 
 # --- 1. Config ---
 st.set_page_config(page_title="SongTumLay Marketplace", layout="wide", page_icon="🏠")
@@ -43,16 +43,17 @@ def find_province_image(prov_name):
                     return path_clean
     return None
 
-# --- 2. Custom CSS ---
+# --- 2. Custom CSS (Mobile & Dark Mode Ready) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Sarabun', sans-serif;
-        color: #1A202C;
+        color: var(--text-color);
     }
     
+    /* Hero Section */
     .hero-container {
         background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070&auto=format&fit=crop');
         background-size: cover;
@@ -67,12 +68,13 @@ st.markdown("""
     .hero-title { font-size: 42px; font-weight: 800; margin-bottom: 5px; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
     .hero-subtitle { font-size: 18px; font-weight: 300; margin-bottom: 10px; color: #E2E8F0; }
 
+    /* Listing Card Style (รองรับ Dark Mode) */
     .listing-card {
-        background: #FFFFFF;
+        background: var(--secondary-background-color); /* ใช้สีตามธีม */
         border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        border: 1px solid #E2E8F0;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        border: 1px solid rgba(128, 128, 128, 0.2);
         height: 100%;
         display: flex;
         flex-direction: column;
@@ -80,19 +82,19 @@ st.markdown("""
     }
     .listing-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         border-color: #CBD5E0;
     }
     
     .card-img-container {
         height: 160px;
         width: 100%;
-        background: radial-gradient(circle, #F7FAFC 0%, #EDF2F7 100%);
+        background: radial-gradient(circle, rgba(200,200,200,0.1) 0%, rgba(150,150,150,0.1) 100%);
         display: flex;
         justify-content: center;
         align-items: center;
         padding: 15px;
-        border-bottom: 1px solid #EDF2F7;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.1);
     }
     .card-img {
         max-height: 120px;
@@ -104,19 +106,39 @@ st.markdown("""
     .listing-card:hover .card-img { transform: scale(1.1); }
 
     .card-body { padding: 15px 20px; flex-grow: 1; display: flex; flex-direction: column; }
-    .card-title-text { font-size: 18px; font-weight: 800; color: #2D3748; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .card-loc { font-size: 14px; color: #718096; margin-bottom: 10px; display: flex; align-items: center; gap: 4px; }
-    .card-price { color: #2ECC71; font-size: 22px; font-weight: 700; margin-top: auto; } /* เปลี่ยนเป็นสีเขียวเหมือน Dashboard */
-    .unit-text { font-size: 13px; color: #A0AEC0; font-weight: normal; }
+    
+    .card-title-text { 
+        font-size: 18px; font-weight: 800; color: var(--text-color); 
+        margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+    }
+    .card-loc { 
+        font-size: 14px; color: var(--text-color); opacity: 0.7; 
+        margin-bottom: 10px; display: flex; align-items: center; gap: 4px; 
+    }
+    .card-price { 
+        color: #2ECC71; font-size: 22px; font-weight: 700; margin-top: auto; 
+    }
+    .unit-text { font-size: 13px; color: var(--text-color); opacity: 0.6; font-weight: normal; }
 
     .card-stats {
-        display: flex; justify-content: space-between; background-color: #F7FAFC;
-        padding: 10px 20px; border-top: 1px solid #EDF2F7; font-size: 13px; color: #4A5568; font-weight: 600;
+        display: flex; justify-content: space-between; 
+        background-color: rgba(128, 128, 128, 0.05); /* สีพื้นหลังจางๆ ให้เข้ากับทุกธีม */
+        padding: 10px 20px; 
+        border-top: 1px solid rgba(128, 128, 128, 0.1); 
+        font-size: 13px; color: var(--text-color); font-weight: 600;
+    }
+
+    /* 📱 Mobile Responsive */
+    @media only screen and (max-width: 600px) {
+        .hero-container { padding: 30px 10px; }
+        .hero-title { font-size: 28px; }
+        .hero-subtitle { font-size: 14px; }
+        .listing-card { margin-bottom: 15px; }
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. Load Data & Apply Logic (เหมือน Dashboard) ---
+# --- 3. Load Data & Apply Logic ---
 @st.cache_data
 def load_data():
     try:
@@ -124,7 +146,7 @@ def load_data():
         latest_year = df['Year'].max()
         df_latest = df[df['Year'] == latest_year].copy()
         
-        # --- 🧠 เพิ่มสูตรคำนวณ (Logic เดียวกับ Dashboard) ---
+        # --- 🧠 AI Valuation Logic ---
         prov_pop_mean = df_latest.groupby('Province')['Total_Pop'].transform('mean').replace(0, 1)
         pop_ratio = df_latest['Total_Pop'] / prov_pop_mean
         
@@ -174,25 +196,18 @@ with c3:
 # --- 5. Data Filtering ---
 df_show = df.copy()
 
-# 🔴 LOGIC ใหม่: แสดง Top ของแต่ละจังหวัดเมื่อเลือกทั้งหมด โดยใช้ Est_Land_Price
 if sel_prov == "ทั้งหมด":
     # 1. เรียงตามราคาประเมิน (Est_Land_Price)
     df_show = df_show.sort_values('Est_Land_Price', ascending=False)
-    
     # 2. ตัดซ้ำ เอา Top 1 ของแต่ละจังหวัด
     df_show = df_show.drop_duplicates(subset=['Province'], keep='first')
-    
-    # 3. เรียงอีกรอบเพื่อโชว์จังหวัดที่แพงที่สุดก่อน
+    # 3. เรียงอีกรอบ
     df_show = df_show.sort_values('Est_Land_Price', ascending=False)
-    
     msg_status = f"🏆 แสดงทำเลศักยภาพสูงสุดของแต่ละจังหวัด (เรียงตามราคาประเมินโมเดล)"
-
 else:
     df_show = df_show[df_show['Province'] == sel_prov]
     if sel_amphoe != "ทั้งหมด":
         df_show = df_show[df_show['Amphoe'] == sel_amphoe]
-        
-    # เรียงตามราคาประเมินเช่นกัน
     df_show = df_show.sort_values('Est_Land_Price', ascending=False)
     msg_status = f"**ผลการค้นหา: {len(df_show):,} รายการ**"
 
@@ -224,9 +239,9 @@ if not df_show.empty:
                     initial = item['Province'][0] if item['Province'] else "?"
                     img_html = f'<div style="font-size:40px; color:#CBD5E0; font-weight:bold;">{initial}</div>'
 
-                # ✅ เปลี่ยนมาโชว์ราคา Est_Land_Price เพื่อให้ตรงกับ Dashboard
                 price_txt = f"฿{item['Est_Land_Price']:,.0f}"
                 
+                # HTML Card (ปรับ CSS Class ให้ตรงกับข้างบน)
                 card_html = f"""<div class="listing-card"><div class="card-img-container">{img_html}</div><div class="card-body"><div class="card-title-text">ต. {item['Tambon']}</div><div class="card-loc">📍 {item['Amphoe']}, {item['Province']}</div><div class="card-price">{price_txt} <span class="unit-text">/ตร.ว.</span></div></div><div class="card-stats"><span>👥 {item['Total_Pop']:,}</span><span>💰 {item['Avg_Income']/1000:.1f}k</span></div></div>"""
                 
                 st.markdown(card_html, unsafe_allow_html=True)
