@@ -2,11 +2,13 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
+import folium
+from streamlit_folium import st_folium
 
 # --- 1. Config ---
 st.set_page_config(page_title="เปรียบเทียบทำเล - SongTumLay", layout="wide", page_icon="⚖️")
 
-# --- 2. Theme & Custom CSS (Mobile & Dark Mode Ready) ---
+# --- 2. Theme & Custom CSS ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
@@ -29,69 +31,64 @@ st.markdown("""
     .main-title { font-size: 36px; font-weight: 700; color: var(--text-color); margin-bottom: 10px; }
     .sub-title { font-size: 18px; font-weight: 300; color: var(--text-color); opacity: 0.7; }
     
-    /* VS Badge Style */
+    /* VS Badge */
     .vs-badge {
-        background-color: #ECF0F1;
-        color: #000000;           
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 900;         
-        font-size: 14px;
-        margin: 0 auto;
-        border: 2px solid #FFFFFF;
+        background-color: var(--text-color);
+        color: var(--background-color);
+        width: 40px; height: 40px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 900; font-size: 14px; margin: 0 auto;
+        border: 2px solid var(--secondary-background-color);
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     /* Verdict Box */
     .verdict-box {
         background-color: var(--secondary-background-color);
-        padding: 20px;
-        border-radius: 10px;
-        margin-top: 20px;
-        text-align: center;
-        font-weight: 600;
-        color: var(--text-color);
+        padding: 20px; border-radius: 10px; margin-top: 20px;
+        text-align: center; font-weight: 600; color: var(--text-color);
         border: 1px solid rgba(128,128,128,0.1);
     }
     
-    /* 📱 Mobile CSS Rules */
+    /* Stat Card */
+    .stat-card {
+        background: var(--secondary-background-color);
+        padding: 15px; border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        text-align: center; margin-bottom: 10px;
+        border: 1px solid rgba(128,128,128,0.2);
+        color: var(--text-color);
+    }
+
+    /* Mobile Responsive */
     @media only screen and (max-width: 600px) {
         .header-container { padding: 20px 10px; }
         .main-title { font-size: 24px; }
         .sub-title { font-size: 14px; }
-        
-        /* ปรับกราฟให้สูงขึ้นหน่อยในมือถือจะได้ไม่อึดอัด */
         .js-plotly-plot { height: 400px !important; }
     }
-    
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. Load Data & Coordinates ---
+# --- 3. Load Data & Helper Functions ---
 @st.cache_data
 def load_data():
     try:
         df = pd.read_csv("final_master_data_multiyear.csv")
         latest_year = df['Year'].max()
         df = df[df['Year'] == latest_year].copy()
-        
         df['Full_Location'] = df['Amphoe'] + ", " + df['Province']
         
         # Calculate Scores
         df['Score_Price'] = (df['Avg_Land_Price'] / df['Avg_Land_Price'].max()) * 100
         df['Score_Income'] = (df['Avg_Income'] / df['Avg_Income'].max()) * 100
         df['Score_Pop'] = (df['Total_Pop'] / df['Total_Pop'].max()) * 100
-        
         return df
     except:
         return pd.DataFrame()
 
-# 📍 ฟังก์ชันหาพิกัด (เพื่อให้แผนที่ทำงานได้)
 def get_coordinates(province_name):
+    # พิกัดหัวเมืองใหญ่
     coords = {
         "เชียงใหม่": [18.7883, 98.9853], "ขอนแก่น": [16.4322, 102.8236],
         "ภูเก็ต": [7.8804, 98.3923], "กรุงเทพมหานคร": [13.7563, 100.5018],
@@ -106,7 +103,7 @@ def get_coordinates(province_name):
 
 df = load_data()
 
-# --- 4. UI Structure ---
+# --- 4. UI ---
 st.markdown("""
 <div class="header-container">
     <div class="main-title">⚖️ Compare Locations</div>
@@ -118,7 +115,6 @@ if df.empty:
     st.error("ไม่พบข้อมูล final_master_data_multiyear.csv")
     st.stop()
 
-# --- 5. Selectors ---
 col1, col2 = st.columns(2)
 locations_list = sorted(df['Full_Location'].unique())
 
@@ -132,106 +128,113 @@ with col2:
     idx2 = locations_list.index("เมืองขอนแก่น, ขอนแก่น") if "เมืองขอนแก่น, ขอนแก่น" in locations_list else 1
     loc2_name = st.selectbox("เลือกทำเล B", locations_list, index=idx2, key='loc2')
 
-# --- 6. Process Comparison ---
+# --- 5. Process Comparison ---
 if loc1_name and loc2_name:
     data1 = df[df['Full_Location'] == loc1_name].iloc[0]
     data2 = df[df['Full_Location'] == loc2_name].iloc[0]
     
     st.markdown("---")
     
-    # === ส่วนที่ 1: Bar Chart ===
+    # === Graph Section ===
     st.markdown("#### 📊 เปรียบเทียบคะแนนศักยภาพ")
-    
-    categories = ['ราคาที่ดิน', 'รายได้ประชากร', 'จำนวนประชากร']
-    scores1 = [data1['Score_Price'], data1['Score_Income'], data1['Score_Pop']]
-    scores2 = [data2['Score_Price'], data2['Score_Income'], data2['Score_Pop']]
+    cats = ['ราคาที่ดิน', 'รายได้ประชากร', 'จำนวนประชากร']
+    sc1 = [data1['Score_Price'], data1['Score_Income'], data1['Score_Pop']]
+    sc2 = [data2['Score_Price'], data2['Score_Income'], data2['Score_Pop']]
     
     fig = go.Figure()
-    fig.add_trace(go.Bar(
-        y=categories, x=scores1, name=data1['Amphoe'], orientation='h',
-        marker_color='#3498DB', opacity=0.9, text=[f"{s:.0f}/100" for s in scores1], textposition='auto'
-    ))
-    fig.add_trace(go.Bar(
-        y=categories, x=scores2, name=data2['Amphoe'], orientation='h',
-        marker_color='#2ECC71', opacity=0.9, text=[f"{s:.0f}/100" for s in scores2], textposition='auto'
-    ))
+    fig.add_trace(go.Bar(y=cats, x=sc1, name=data1['Amphoe'], orientation='h', marker_color='#3498DB', opacity=0.9, text=[f"{s:.0f}" for s in sc1], textposition='auto'))
+    fig.add_trace(go.Bar(y=cats, x=sc2, name=data2['Amphoe'], orientation='h', marker_color='#2ECC71', opacity=0.9, text=[f"{s:.0f}" for s in sc2], textposition='auto'))
     
     fig.update_layout(
-        barmode='group', xaxis=dict(title='คะแนนศักยภาพ (เต็ม 100)', range=[0, 110]),
-        yaxis=dict(autorange="reversed"), height=350, margin=dict(l=20, r=20, t=20, b=20),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        font=dict(family="Sarabun", size=14)
+        barmode='group', 
+        xaxis=dict(range=[0, 110], color='gray'),
+        yaxis=dict(autorange="reversed", color='gray'), 
+        height=350, margin=dict(l=20, r=20, t=20, b=20),
+        legend=dict(orientation="h", y=1.1, font=dict(color='gray')),
+        font=dict(family="Sarabun", size=14),
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
     )
     st.plotly_chart(fig, use_container_width=True)
     
-    # === ส่วนที่ 2: Stat Comparison (Mobile Friendly HTML) ===
+    # === Stats Section ===
     st.markdown("#### ⚡ วัดกันที่ตัวเลขจริง")
-    
-    c_stat1, c_stat2, c_stat3 = st.columns(3)
+    c_s1, c_s2, c_s3 = st.columns(3)
     
     def create_stat_card(title, val1, val2, unit):
         diff = val1 - val2
-        if val1 > val2:
-            win_color = "color: #3498DB;" 
-            win_icon = "🟦 A ชนะ"
-        elif val2 > val1:
-            win_color = "color: #2ECC71;" 
-            win_icon = "🟩 B ชนะ"
-        else:
-            win_color = "color: #95A5A6;"
-            win_icon = "➖ เสมอ"
+        if val1 > val2: wc="color:#3498DB;"; wi="🟦 A ชนะ"
+        elif val2 > val1: wc="color:#2ECC71;"; wi="🟩 B ชนะ"
+        else: wc="color:gray;"; wi="➖ เสมอ"
 
-        # HTML ที่ใช้ Flex-wrap เพื่อรองรับมือถือ
         return f"""
-        <div style="background:var(--secondary-background-color); padding:15px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; margin-bottom:10px; border:1px solid rgba(128,128,128,0.2);">
-            <div style="color:var(--text-color); font-size:15px; font-weight:bold; margin-bottom:10px;">{title}</div>
+        <div class="stat-card">
+            <div style="font-size:15px; font-weight:bold; margin-bottom:10px;">{title}</div>
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
-                <div style="text-align:left; width:40%; min-width:80px;">
-                    <div style="color:#3498DB; font-weight:bold; font-size:18px;">{val1:,.0f}</div>
-                </div>
-                <div style="width:20%; display:flex; justify-content:center;">
-                    <div class="vs-badge">VS</div>
-                </div>
-                <div style="text-align:right; width:40%; min-width:80px;">
-                    <div style="color:#2ECC71; font-weight:bold; font-size:18px;">{val2:,.0f}</div>
-                </div>
+                <div style="text-align:left; width:40%; min-width:80px; color:#3498DB; font-weight:bold; font-size:18px;">{val1:,.0f}</div>
+                <div style="width:20%; display:flex; justify-content:center;"><div class="vs-badge">VS</div></div>
+                <div style="text-align:right; width:40%; min-width:80px; color:#2ECC71; font-weight:bold; font-size:18px;">{val2:,.0f}</div>
             </div>
-            <div style="font-size:12px; color:var(--text-color); opacity:0.7;">ส่วนต่าง {abs(diff):,.0f} {unit}</div>
-            <div style="margin-top:5px; font-weight:bold; font-size:13px; {win_color}">{win_icon}</div>
+            <div style="font-size:12px; opacity:0.7;">ส่วนต่าง {abs(diff):,.0f} {unit}</div>
+            <div style="margin-top:5px; font-weight:bold; font-size:13px; {wc}">{wi}</div>
         </div>
         """
+    with c_s1: st.markdown(create_stat_card("ราคาที่ดินเฉลี่ย", data1['Avg_Land_Price'], data2['Avg_Land_Price'], "บาท"), unsafe_allow_html=True)
+    with c_s2: st.markdown(create_stat_card("รายได้ครัวเรือน", data1['Avg_Income'], data2['Avg_Income'], "บาท"), unsafe_allow_html=True)
+    with c_s3: st.markdown(create_stat_card("จำนวนประชากร", data1['Total_Pop'], data2['Total_Pop'], "คน"), unsafe_allow_html=True)
 
-    with c_stat1:
-        st.markdown(create_stat_card("ราคาที่ดินเฉลี่ย", data1['Avg_Land_Price'], data2['Avg_Land_Price'], "บาท"), unsafe_allow_html=True)
-    with c_stat2:
-        st.markdown(create_stat_card("รายได้ครัวเรือน", data1['Avg_Income'], data2['Avg_Income'], "บาท"), unsafe_allow_html=True)
-    with c_stat3:
-        st.markdown(create_stat_card("จำนวนประชากร", data1['Total_Pop'], data2['Total_Pop'], "คน"), unsafe_allow_html=True)
-
-    # === ส่วนที่ 3: แผนที่เปรียบเทียบ (กลับมาแล้ว!) ===
+    # === 🗺️ NEW MAP SECTION (แผนที่แบบใหม่) ===
     st.markdown("#### 🗺️ แผนที่เปรียบเทียบตำแหน่ง")
+    
+    # 1. หาพิกัด
     lat1, lon1 = get_coordinates(data1['Province'])
     lat2, lon2 = get_coordinates(data2['Province'])
     
-    map_df = pd.DataFrame({
-        'lat': [lat1, lat2],
-        'lon': [lon1, lon2],
-        'color': ['#3498DB', '#2ECC71'], # ฟ้า, เขียว
-        'size': [150, 150]
-    })
+    # 2. คำนวณจุดกึ่งกลาง (Center) เพื่อให้แผนที่แสดงทั้งคู่
+    center_lat = (lat1 + lat2) / 2
+    center_lon = (lon1 + lon2) / 2
     
-    st.map(map_df, latitude='lat', longitude='lon', color='color', size='size')
-    st.caption(f"📍 **จุดสีฟ้า:** {data1['Amphoe']} | 📍 **จุดสีเขียว:** {data2['Amphoe']}")
+    # 3. สร้างแผนที่ Folium (ใช้ธีม CartoDB positron สีสะอาดตา ดูง่าย)
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=6, tiles="CartoDB positron")
+    
+    # 4. สร้างจุด Marker วงกลมใหญ่ๆ (CircleMarker)
+    # จุดที่ 1: สีฟ้า (Blue)
+    folium.CircleMarker(
+        location=[lat1, lon1],
+        radius=15,          # ✅ กำหนดขนาดจุดเป็น Pixel (ใหญ่ชัดเจน)
+        color="white",      # ขอบสีขาว
+        weight=2,
+        fill=True,
+        fill_color="#3498DB", # สีฟ้า
+        fill_opacity=1.0,   # สีทึบ ไม่โปร่งใส
+        popup=f"<b>{data1['Amphoe']}</b><br>ราคา: {data1['Avg_Land_Price']:,}",
+        tooltip=f"A: {data1['Amphoe']}"
+    ).add_to(m)
+    
+    # จุดที่ 2: สีเขียว (Green)
+    folium.CircleMarker(
+        location=[lat2, lon2],
+        radius=15,          # ✅ จุดใหญ่เท่ากัน
+        color="white",
+        weight=2,
+        fill=True,
+        fill_color="#2ECC71", # สีเขียว
+        fill_opacity=1.0,
+        popup=f"<b>{data2['Amphoe']}</b><br>ราคา: {data2['Avg_Land_Price']:,}",
+        tooltip=f"B: {data2['Amphoe']}"
+    ).add_to(m)
+    
+    # แสดงแผนที่
+    st_folium(m, height=400, use_container_width=True)
 
-    # === ส่วนที่ 4: สรุป ===
-    recommendation = ""
+    # === Verdict ===
+    rec = ""
     if data1['Score_Price'] < data2['Score_Price'] and data1['Score_Income'] > data2['Score_Income']:
-        recommendation = f"✨ **{data1['Amphoe']}** ดูคุ้มค่ากว่า! (ที่ดินถูกกว่า + คนรวยกว่า)"
+        rec = f"✨ **{data1['Amphoe']}** ดูคุ้มค่ากว่า! (ที่ดินถูกกว่า + คนรวยกว่า)"
     elif data2['Score_Price'] < data1['Score_Price'] and data2['Score_Income'] > data1['Score_Income']:
-        recommendation = f"✨ **{data2['Amphoe']}** ดูคุ้มค่ากว่า! (ที่ดินถูกกว่า + คนรวยกว่า)"
+        rec = f"✨ **{data2['Amphoe']}** ดูคุ้มค่ากว่า! (ที่ดินถูกกว่า + คนรวยกว่า)"
     elif data1['Total_Pop'] > data2['Total_Pop']:
-        recommendation = f"🏙️ หากเน้นคนพลุกพล่าน **{data1['Amphoe']}** ตอบโจทย์กว่ามาก"
+        rec = f"🏙️ หากเน้นคนพลุกพล่าน **{data1['Amphoe']}** ตอบโจทย์กว่ามาก"
     else:
-        recommendation = f"🏙️ หากเน้นคนพลุกพล่าน **{data2['Amphoe']}** ตอบโจทย์กว่ามาก"
+        rec = f"🏙️ หากเน้นคนพลุกพล่าน **{data2['Amphoe']}** ตอบโจทย์กว่ามาก"
 
-    st.markdown(f"""<div class="verdict-box">{recommendation}</div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div class="verdict-box">{rec}</div>""", unsafe_allow_html=True)
