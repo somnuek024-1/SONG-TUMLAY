@@ -6,6 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from folium.plugins import MarkerCluster
 import numpy as np
+import os
 
 # --- 1. Config & Design ---
 st.set_page_config(page_title="SONGTUMLAY Pro", layout="wide", page_icon="🏙️")
@@ -16,18 +17,17 @@ st.markdown("""
     
     html, body, [class*="css"] {
         font-family: 'Sarabun', sans-serif;
-        color: var(--text-color); /* บังคับให้ใช้สีตามธีม */
+        color: var(--text-color);
     }
     
-    /* --- Property Card (ปรับให้รองรับ Dark Mode) --- */
+    /* --- Property Card --- */
     .property-card {
-        /* ใช้สีพื้นหลังรองของระบบ (Light=เทาอ่อน / Dark=เทาเข้ม) */
         background-color: var(--secondary-background-color);
         border-radius: 12px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         margin-bottom: 15px;
         padding: 15px;
-        border: 1px solid rgba(128, 128, 128, 0.2); /* ขอบสีจางๆ */
+        border: 1px solid rgba(128, 128, 128, 0.2);
         transition: transform 0.2s;
     }
     .property-card:hover {
@@ -36,85 +36,70 @@ st.markdown("""
     }
     
     .card-title {
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--text-color); /* สีเปลี่ยนตามธีม */
-        margin-bottom: 5px;
+        font-size: 18px; font-weight: 700; color: var(--text-color); margin-bottom: 5px;
     }
-    
     .card-subtitle {
-        font-size: 12px;
-        color: var(--text-color);
-        opacity: 0.8; /* ทำให้จางลงนิดหน่อยแทนการ Fix สีเทา */
-        margin-bottom: 10px;
+        font-size: 12px; color: var(--text-color); opacity: 0.8; margin-bottom: 10px;
     }
-    
     .score-badge {
         background: linear-gradient(90deg, #1A365D 0%, #2A4365 100%);
-        color: white; /* Badge บังคับสีขาวเพราะพื้นหลังเข้มเสมอ */
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: bold;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        color: white; padding: 4px 12px; border-radius: 20px;
+        font-size: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     
-    /* Growth Tags */
-    .growth-tag {
-        font-size: 11px;
-        font-weight: bold;
-        padding: 2px 6px;
-        border-radius: 4px;
-        margin-left: 5px;
-    }
-    .growth-up { background-color: rgba(60, 179, 113, 0.2); color: #2ECC71; }
-    .growth-down { background-color: rgba(220, 20, 60, 0.2); color: #E53E3E; }
-    
-    /* --- Formula Box (กล่องสมการ) --- */
+    /* --- Formula Box --- */
     .formula-box {
         background-color: var(--secondary-background-color);
-        border: 1px dashed var(--primary-color);
+        border: 1px dashed #4CAF50; /* เปลี่ยนสีเส้นประให้เด่นขึ้น */
         border-radius: 10px;
         padding: 20px;
         margin-top: 10px;
         text-align: center;
     }
-    .formula-item {
-        display: inline-block;
-        margin: 0 10px;
-        text-align: center;
-    }
-    .formula-val {
-        font-size: 24px;
-        font-weight: bold;
-        color: var(--text-color); /* สีเปลี่ยนตามธีม */
-    }
-    .formula-label {
-        font-size: 12px;
-        color: var(--text-color);
-        opacity: 0.7;
-    }
-    .operator {
-        font-size: 20px;
-        color: var(--primary-color);
-        vertical-align: super;
-    }
+    .formula-item { display: inline-block; margin: 0 10px; text-align: center; }
+    .formula-val { font-size: 24px; font-weight: bold; color: var(--text-color); }
+    .formula-label { font-size: 12px; color: var(--text-color); opacity: 0.7; }
+    .operator { font-size: 20px; color: #4CAF50; vertical-align: super; }
     
     /* Sidebar Fix */
-    [data-testid="stSidebar"] { 
-        background-color: #1A365D; /* Sidebar สีน้ำเงินเข้มเสมอ */
-    }
-    [data-testid="stSidebar"] * { 
-        color: white !important; /* บังคับตัวอักษรใน Sidebar เป็นสีขาวเสมอ */
-    }
+    [data-testid="stSidebar"] { background-color: #1A365D; }
+    [data-testid="stSidebar"] * { color: white !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. Load Data ---
+# --- 2. Helper Functions (Coordinates) ---
+def get_coordinates(province_name):
+    # พิกัดหัวเมืองใหญ่และจังหวัดสำคัญ (Mockup สำหรับการแสดงผลแผนที่)
+    coords = {
+        "เชียงใหม่": [18.7883, 98.9853], "ขอนแก่น": [16.4322, 102.8236],
+        "ภูเก็ต": [7.8804, 98.3923], "กรุงเทพมหานคร": [13.7563, 100.5018],
+        "นครราชสีมา": [14.9799, 102.0978], "ชลบุรี": [13.3611, 100.9847],
+        "สงขลา": [7.1988, 100.5951], "อุดรธานี": [17.4138, 102.7872],
+        "ประจวบคีรีขันธ์": [11.8124, 99.7973], "ระยอง": [12.6815, 101.2816],
+        "พระนครศรีอยุธยา": [14.3532, 100.5684], "สุราษฎร์ธานี": [9.1382, 99.3217],
+        "เชียงราย": [19.9105, 99.8406], "อุบลราชธานี": [15.2448, 104.8473],
+        "พิษณุโลก": [16.8211, 100.2659], "กาญจนบุรี": [14.0225, 99.5327]
+    }
+    # ค่า Default คือ กทม.
+    return coords.get(province_name, [13.7563, 100.5018])
+
+# --- 3. Load Data ---
 @st.cache_data
 def load_data():
     try:
         df = pd.read_csv("final_master_data_multiyear.csv")
+        
+        # ✅ เพิ่ม: สร้างคอลัมน์ lat, lon หากไม่มีในไฟล์
+        if 'lat' not in df.columns or 'lon' not in df.columns:
+            # ใช้ apply เพื่อ map พิกัดตามจังหวัด
+            coords = df['Province'].apply(get_coordinates)
+            df['lat'] = coords.apply(lambda x: x[0])
+            df['lon'] = coords.apply(lambda x: x[1])
+            
+            # (Optional) กระจายจุดเล็กน้อยเพื่อไม่ให้ทับกันสนิทในแผนที่
+            df['lat'] = df['lat'] + np.random.normal(0, 0.02, size=len(df))
+            df['lon'] = df['lon'] + np.random.normal(0, 0.02, size=len(df))
+            
         return df
     except FileNotFoundError:
         st.error("❌ ไม่พบไฟล์ final_master_data_multiyear.csv")
@@ -122,7 +107,7 @@ def load_data():
 
 df_all_years = load_data()
 
-# --- 3. Logic: Advanced Pricing Model ---
+# --- 4. Logic: Advanced Pricing Model ---
 @st.cache_data
 def process_latest_view(df):
     if df.empty: return pd.DataFrame(), "N/A"
@@ -130,7 +115,7 @@ def process_latest_view(df):
     latest_year = df['Year'].max()
     df_latest = df[df['Year'] == latest_year].copy()
     
-    # Growth Rate
+    # Growth Rate Logic
     growth_map = {}
     grouped = df.sort_values('Year').groupby(['Province', 'Amphoe', 'Tambon'])
     for name, group in grouped:
@@ -141,23 +126,21 @@ def process_latest_view(df):
             growth_map[name] = growth
         else:
             growth_map[name] = 0
-    df_latest['Growth_Pop'] = df_latest.set_index(['Province', 'Amphoe', 'Tambon']).index.map(growth_map).fillna(0)
-
-    # --- Theory Calculation ---
     
-    # 1. Base Price
+    # Map Growth back to df_latest
+    # สร้าง index ชั่วคราวเพื่อ map ข้อมูล
+    df_latest['temp_index'] = list(zip(df_latest.Province, df_latest.Amphoe, df_latest.Tambon))
+    df_latest['Growth_Pop'] = df_latest['temp_index'].map(growth_map).fillna(0)
     
+    # --- Calculation ---
     # 2. Scaling Factor
     prov_pop_mean = df_latest.groupby('Province')['Total_Pop'].transform('mean').replace(0, 1)
     pop_ratio = df_latest['Total_Pop'] / prov_pop_mean
-    alpha = 0.3
-    df_latest['Factor_Density'] = np.power(pop_ratio, alpha)
+    df_latest['Factor_Density'] = np.power(pop_ratio, 0.3)
     
     # 3. Centrality Factor
     def check_centrality(amphoe_name):
-        if 'เมือง' in str(amphoe_name) or 'เขต' in str(amphoe_name):
-            return 1.2 
-        return 1.0
+        return 1.2 if ('เมือง' in str(amphoe_name) or 'เขต' in str(amphoe_name)) else 1.0
     df_latest['Factor_Centrality'] = df_latest['Amphoe'].apply(check_centrality)
     
     # 4. Final Calculation
@@ -183,7 +166,7 @@ else:
     df_view = pd.DataFrame()
     latest_year_str = "N/A"
 
-# --- 4. Sidebar ---
+# --- 5. Sidebar ---
 st.sidebar.title("🏙️ SONGTUMLAY")
 st.sidebar.caption("Price Breakdown Mode")
 st.sidebar.markdown("---")
@@ -204,16 +187,20 @@ if selected_prov != "ทั้งหมด":
 if selected_amphoe != "ทั้งหมด":
     df_display = df_display[df_display['Amphoe'] == selected_amphoe]
 
-# --- 5. Main Content ---
+# --- 6. Main Content ---
 st.title(f"วิเคราะห์ทำเล: {selected_prov if selected_prov!='ทั้งหมด' else 'ภาพรวม'}")
 
 col_map, col_list = st.columns([2, 1.2])
 
 with col_map:
     st.subheader(f"🗺️ แผนที่ราคา ({latest_year_str})")
+    
+    # Default Center (Bangkok)
     center = [13.7563, 100.5018]
     zoom = 6
+    
     if not df_display.empty:
+        # ใช้พิกัดจริงจากการคำนวณ
         center = [df_display['lat'].mean(), df_display['lon'].mean()]
         zoom = 10 if selected_amphoe == "ทั้งหมด" else 11
         
@@ -222,16 +209,16 @@ with col_map:
     
     if not df_display.empty:
         for _, row in df_display.iterrows():
-            if pd.notna(row['lat']):
+            if pd.notna(row['lat']) and pd.notna(row['lon']):
+                # สีตามคะแนน
                 color = '#2ECC71' if row['Total_Score'] >= 6 else ('#F1C40F' if row['Total_Score'] >= 3 else '#E74C3C')
-                price_text = f"{row['Est_Land_Price']:,.0f}"
                 
                 popup_html = f"""
-                <div style="font-family:Sarabun; width:200px;">
+                <div style="font-family:Sarabun; width:200px; color:black;">
                     <b>{row['Tambon']}</b><br>
                     Score: {row['Total_Score']}<hr>
-                    <b>฿ {price_text}</b><br>
-                    (Base: {row['Avg_Land_Price']:,.0f} x {row['Factor_Total']:.2f})
+                    <b>฿ {row['Est_Land_Price']:,.0f}</b><br>
+                    <span style="font-size:10px;">(Base: {row['Avg_Land_Price']:,.0f} x {row['Factor_Total']:.2f})</span>
                 </div>
                 """
                 folium.CircleMarker(
@@ -242,22 +229,27 @@ with col_map:
     st_folium(m, height=500, use_container_width=True)
 
 with col_list:
-    st.subheader("🏆 รายการ")
+    st.subheader("🏆 รายการ (Top 5)")
     if not df_display.empty:
         top_list = df_display.sort_values('Total_Score', ascending=False).head(5)
         for _, row in top_list.iterrows():
             st.markdown(f"""
             <div class="property-card">
                 <div style="display:flex; justify-content:space-between;">
-                    <div class="card-title" style="font-size:16px;">{row['Tambon']}</div>
-                    <div class="score-badge">{row['Total_Score']}</div>
+                    <div class="card-title">{row['Tambon']}</div>
+                    <div class="score-badge">Score: {row['Total_Score']}</div>
                 </div>
-                <div class="card-subtitle">📍 {row['Amphoe']}</div>
-                <div style="margin-top:8px; font-weight:bold; color:#2ECC71; font-size:18px;">฿{row['Est_Land_Price']:,.0f}</div>
+                <div class="card-subtitle">📍 {row['Amphoe']}, {row['Province']}</div>
+                <div style="margin-top:8px; font-weight:bold; color:#2ECC71; font-size:18px;">
+                    ฿{row['Est_Land_Price']:,.0f} 
+                    <span style="font-size:12px; color:gray; font-weight:normal;">/ตร.ว.</span>
+                </div>
             </div>
             """, unsafe_allow_html=True)
+    else:
+        st.info("ไม่พบข้อมูลตามเงื่อนไข")
 
-# --- 6. 🧮 Price Breakdown Section ---
+# --- 7. Price Breakdown Section ---
 st.markdown("---")
 st.subheader("🧮 แกะสูตรคำนวณราคา (Price Breakdown)")
 st.info("เลือกตำบลด้านล่าง เพื่อดูว่าทฤษฎีแต่ละตัวส่งผลต่อราคาอย่างไร")
@@ -282,12 +274,12 @@ if not df_display.empty:
         </div>
         <span class="operator">×</span>
         <div class="formula-item">
-            <div class="formula-val" style="color:orange;">{density_fac:.2f}</div>
+            <div class="formula-val" style="color:#F39C12;">{density_fac:.2f}</div>
             <div class="formula-label">Bid-Rent Factor<br>(ความหนาแน่น)</div>
         </div>
         <span class="operator">×</span>
         <div class="formula-item">
-            <div class="formula-val" style="color:dodgerblue;">{central_fac:.1f}</div>
+            <div class="formula-val" style="color:#3498DB;">{central_fac:.1f}</div>
             <div class="formula-label">Centrality Factor<br>(ศูนย์กลางเมือง)</div>
         </div>
         <span class="operator">=</span>
@@ -324,5 +316,6 @@ if not df_display.empty:
         fig.update_layout(showlegend=False, height=250, 
                           paper_bgcolor='rgba(0,0,0,0)', 
                           plot_bgcolor='rgba(0,0,0,0)',
-                          font=dict(color="grey")) # ปรับสีฟอนต์กราฟให้กลางๆ
+                          margin=dict(l=20, r=20, t=20, b=20),
+                          font=dict(color="#888")) # สีเทากลางๆ เพื่อให้เข้ากับทั้ง Dark/Light
         st.plotly_chart(fig, use_container_width=True)
