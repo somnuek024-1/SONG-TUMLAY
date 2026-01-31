@@ -50,7 +50,7 @@ st.markdown("""
     /* --- Formula Box --- */
     .formula-box {
         background-color: var(--secondary-background-color);
-        border: 1px dashed #4CAF50; /* เปลี่ยนสีเส้นประให้เด่นขึ้น */
+        border: 1px dashed #4CAF50;
         border-radius: 10px;
         padding: 20px;
         margin-top: 10px;
@@ -61,15 +61,38 @@ st.markdown("""
     .formula-label { font-size: 12px; color: var(--text-color); opacity: 0.7; }
     .operator { font-size: 20px; color: #4CAF50; vertical-align: super; }
     
-    /* Sidebar Fix */
-    [data-testid="stSidebar"] { background-color: #1A365D; }
-    [data-testid="stSidebar"] * { color: white !important; }
+    /* --- Sidebar Styling (แก้ใหม่) --- */
+    /* 1. พื้นหลัง Sidebar สีน้ำเงินเข้ม */
+    [data-testid="stSidebar"] { 
+        background-color: #1A365D; 
+    }
+    
+    /* 2. บังคับให้หัวข้อและ Label ใน Sidebar เป็นสีขาว */
+    [data-testid="stSidebar"] h1, 
+    [data-testid="stSidebar"] h2, 
+    [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] label, 
+    [data-testid="stSidebar"] .stMarkdown,
+    [data-testid="stSidebar"] p { 
+        color: white !important; 
+    }
+    
+    /* 3. ✅ แก้ไขสำคัญ: บังคับตัวหนังสือในช่อง Selectbox ให้เป็นสีดำ (จะได้มองเห็นบนพื้นขาว) */
+    [data-testid="stSidebar"] div[data-baseweb="select"] > div {
+        color: black !important;
+        -webkit-text-fill-color: black !important;
+    }
+    /* เปลี่ยนสีลูกศร Dropdown เป็นสีดำด้วย */
+    [data-testid="stSidebar"] div[data-baseweb="select"] svg {
+        fill: black !important;
+    }
+    
 </style>
 """, unsafe_allow_html=True)
 
 # --- 2. Helper Functions (Coordinates) ---
 def get_coordinates(province_name):
-    # พิกัดหัวเมืองใหญ่และจังหวัดสำคัญ (Mockup สำหรับการแสดงผลแผนที่)
+    # พิกัดหัวเมืองใหญ่และจังหวัดสำคัญ
     coords = {
         "เชียงใหม่": [18.7883, 98.9853], "ขอนแก่น": [16.4322, 102.8236],
         "ภูเก็ต": [7.8804, 98.3923], "กรุงเทพมหานคร": [13.7563, 100.5018],
@@ -80,7 +103,6 @@ def get_coordinates(province_name):
         "เชียงราย": [19.9105, 99.8406], "อุบลราชธานี": [15.2448, 104.8473],
         "พิษณุโลก": [16.8211, 100.2659], "กาญจนบุรี": [14.0225, 99.5327]
     }
-    # ค่า Default คือ กทม.
     return coords.get(province_name, [13.7563, 100.5018])
 
 # --- 3. Load Data ---
@@ -89,14 +111,12 @@ def load_data():
     try:
         df = pd.read_csv("final_master_data_multiyear.csv")
         
-        # ✅ เพิ่ม: สร้างคอลัมน์ lat, lon หากไม่มีในไฟล์
+        # สร้างคอลัมน์ lat, lon หากไม่มีในไฟล์
         if 'lat' not in df.columns or 'lon' not in df.columns:
-            # ใช้ apply เพื่อ map พิกัดตามจังหวัด
             coords = df['Province'].apply(get_coordinates)
             df['lat'] = coords.apply(lambda x: x[0])
             df['lon'] = coords.apply(lambda x: x[1])
-            
-            # (Optional) กระจายจุดเล็กน้อยเพื่อไม่ให้ทับกันสนิทในแผนที่
+            # กระจายจุดเล็กน้อยเพื่อไม่ให้ทับกันสนิท
             df['lat'] = df['lat'] + np.random.normal(0, 0.02, size=len(df))
             df['lon'] = df['lon'] + np.random.normal(0, 0.02, size=len(df))
             
@@ -127,23 +147,18 @@ def process_latest_view(df):
         else:
             growth_map[name] = 0
     
-    # Map Growth back to df_latest
-    # สร้าง index ชั่วคราวเพื่อ map ข้อมูล
     df_latest['temp_index'] = list(zip(df_latest.Province, df_latest.Amphoe, df_latest.Tambon))
     df_latest['Growth_Pop'] = df_latest['temp_index'].map(growth_map).fillna(0)
     
     # --- Calculation ---
-    # 2. Scaling Factor
     prov_pop_mean = df_latest.groupby('Province')['Total_Pop'].transform('mean').replace(0, 1)
     pop_ratio = df_latest['Total_Pop'] / prov_pop_mean
     df_latest['Factor_Density'] = np.power(pop_ratio, 0.3)
     
-    # 3. Centrality Factor
     def check_centrality(amphoe_name):
         return 1.2 if ('เมือง' in str(amphoe_name) or 'เขต' in str(amphoe_name)) else 1.0
     df_latest['Factor_Centrality'] = df_latest['Amphoe'].apply(check_centrality)
     
-    # 4. Final Calculation
     df_latest['Factor_Total'] = (df_latest['Factor_Density'] * df_latest['Factor_Centrality']).clip(0.5, 3.0)
     df_latest['Est_Land_Price'] = df_latest['Avg_Land_Price'] * df_latest['Factor_Total']
     
@@ -195,12 +210,10 @@ col_map, col_list = st.columns([2, 1.2])
 with col_map:
     st.subheader(f"🗺️ แผนที่ราคา ({latest_year_str})")
     
-    # Default Center (Bangkok)
     center = [13.7563, 100.5018]
     zoom = 6
     
     if not df_display.empty:
-        # ใช้พิกัดจริงจากการคำนวณ
         center = [df_display['lat'].mean(), df_display['lon'].mean()]
         zoom = 10 if selected_amphoe == "ทั้งหมด" else 11
         
@@ -210,7 +223,6 @@ with col_map:
     if not df_display.empty:
         for _, row in df_display.iterrows():
             if pd.notna(row['lat']) and pd.notna(row['lon']):
-                # สีตามคะแนน
                 color = '#2ECC71' if row['Total_Score'] >= 6 else ('#F1C40F' if row['Total_Score'] >= 3 else '#E74C3C')
                 
                 popup_html = f"""
@@ -265,7 +277,6 @@ if not df_display.empty:
     central_fac = row['Factor_Centrality']
     final_price = row['Est_Land_Price']
     
-    # Formula Box
     st.markdown(f"""
     <div class="formula-box">
         <div class="formula-item">
@@ -290,7 +301,6 @@ if not df_display.empty:
     </div>
     """, unsafe_allow_html=True)
     
-    # Explanation & Chart
     c1, c2 = st.columns(2)
     with c1:
         st.markdown("### 📊 วิเคราะห์ปัจจัย (Factors)")
@@ -317,5 +327,5 @@ if not df_display.empty:
                           paper_bgcolor='rgba(0,0,0,0)', 
                           plot_bgcolor='rgba(0,0,0,0)',
                           margin=dict(l=20, r=20, t=20, b=20),
-                          font=dict(color="#888")) # สีเทากลางๆ เพื่อให้เข้ากับทั้ง Dark/Light
+                          font=dict(color="#888"))
         st.plotly_chart(fig, use_container_width=True)
