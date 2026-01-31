@@ -61,30 +61,37 @@ st.markdown("""
     .formula-label { font-size: 12px; color: var(--text-color); opacity: 0.7; }
     .operator { font-size: 20px; color: #4CAF50; vertical-align: super; }
     
-    /* --- Sidebar Styling (แก้ใหม่) --- */
-    /* 1. พื้นหลัง Sidebar สีน้ำเงินเข้ม */
+    /* --- Sidebar Styling (ฉลาดขึ้น) --- */
+    /* 1. พื้นหลัง Sidebar สีน้ำเงินเข้มเสมอ */
     [data-testid="stSidebar"] { 
         background-color: #1A365D; 
     }
     
-    /* 2. บังคับให้หัวข้อและ Label ใน Sidebar เป็นสีขาว */
+    /* 2. หัวข้อและ Label ใน Sidebar บังคับสีขาว (เพราะพื้นหลังน้ำเงิน) */
     [data-testid="stSidebar"] h1, 
     [data-testid="stSidebar"] h2, 
     [data-testid="stSidebar"] h3, 
     [data-testid="stSidebar"] label, 
-    [data-testid="stSidebar"] .stMarkdown,
-    [data-testid="stSidebar"] p { 
+    [data-testid="stSidebar"] .stMarkdown p { 
         color: white !important; 
     }
     
-    /* 3. ✅ แก้ไขสำคัญ: บังคับตัวหนังสือในช่อง Selectbox ให้เป็นสีดำ (จะได้มองเห็นบนพื้นขาว) */
+    /* 3. ✅ แก้ไขจุดสำคัญ: ช่อง Selectbox ให้ใช้สีตามธีม (Smart Color) */
+    /* ถ้าธีมสว่าง -> var(--text-color) จะเป็นดำ */
+    /* ถ้าธีมมืด   -> var(--text-color) จะเป็นขาว */
     [data-testid="stSidebar"] div[data-baseweb="select"] > div {
-        color: black !important;
-        -webkit-text-fill-color: black !important;
+        color: var(--text-color) !important;
+        -webkit-text-fill-color: var(--text-color) !important;
     }
-    /* เปลี่ยนสีลูกศร Dropdown เป็นสีดำด้วย */
+    
+    /* เปลี่ยนสีลูกศร Dropdown ให้ตามธีมด้วย */
     [data-testid="stSidebar"] div[data-baseweb="select"] svg {
-        fill: black !important;
+        fill: var(--text-color) !important;
+    }
+    
+    /* พื้นหลังของ Dropdown list ตอนกดออกมา */
+    ul[data-testid="stSelectboxVirtualDropdown"] {
+        background-color: var(--background-color) !important;
     }
     
 </style>
