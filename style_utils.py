@@ -32,8 +32,8 @@ def apply_custom_style():
             background-image: url("data:image/png;base64,{img_base64}");
             background-repeat: no-repeat;
             background-position: center top 20px; 
-            background-size: 280px auto; /* ขนาดรูป */
-            padding-top: 260px !important; /* ดันเมนูลงมา */
+            background-size: 280px auto; 
+            padding-top: 260px !important; 
         """
 
     # 2. ฝัง CSS ทั้งหมด
@@ -51,12 +51,11 @@ def apply_custom_style():
             background: linear-gradient(180deg, #1A365D 0%, #142847 100%);
         }}
 
-        /* จัดการส่วนเมนู Navigation (ใส่โลโก้ + ขยับตำแหน่ง) */
+        /* จัดการส่วนเมนู Navigation */
         div[data-testid="stSidebarNav"] {{
             {logo_css}
         }}
 
-        /* ขยายขนาดเมนูให้ใหญ่ขึ้นเล็กน้อย */
         div[data-testid="stSidebarNav"] > ul {{
             transform: scale(1.08);
             transform-origin: top center;
@@ -76,28 +75,44 @@ def apply_custom_style():
             fill: var(--text-color) !important;
         }}
         
-        /* เส้นคั่น */
         .sidebar-divider {{
             margin: 15px 0; border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2);
         }}
         
-        /* --- Card Styling (Top 5 & Stats) --- */
+        /* ============================================================
+           ✅ ส่วนที่แก้ไข: บังคับการ์ดให้เป็นสีขาวเสมอ + ตัวหนังสือสีดำ
+           ============================================================ */
         .listing-card, .property-card, .stat-card {{
-            background-color: var(--secondary-background-color);
+            background-color: #FFFFFF !important;  /* พื้นหลังสีขาวเสมอ */
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            border: 1px solid rgba(128, 128, 128, 0.2);
+            border: 1px solid #E0E0E0;             /* ขอบสีเทาอ่อน */
             padding: 25px; 
         }}
+
+        /* บังคับตัวหนังสือข้างในให้เป็นสีเข้ม (ไม่งั้น Dark Mode จะมองไม่เห็น) */
+        .listing-card div, .property-card div, .stat-card div {{
+            color: #31333F; /* สีเทาเข้มเกือบดำ */
+        }}
+
+        /* ยกเว้น: ราคาให้เป็นสีเขียวเหมือนเดิม */
+        .card-price, div[style*="color:#2ECC71"] {{
+            color: #2ECC71 !important;
+        }}
         
+        /* ยกเว้น: ป้ายคะแนนพื้นหลังน้ำเงิน ให้ตัวหนังสือเป็นสีขาว */
+        div[style*="background:#1A365D"] {{
+            color: #FFFFFF !important;
+        }}
+        
+        /* สไตล์ Badge VS ในหน้าเปรียบเทียบ */
         .vs-badge {{
-            background-color: var(--text-color); color: var(--background-color);
+            background-color: #31333F; 
+            color: #FFFFFF;
             width: 40px; height: 40px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             font-weight: 900;
-            border: 2px solid var(--secondary-background-color);
+            border: 2px solid #FFFFFF;
         }}
     </style>
     """, unsafe_allow_html=True)
-    
-    # ❌ ลบส่วน with st.sidebar ด้านล่างนี้ออกไปแล้ว เพื่อไม่ให้มีช่องว่างเกินจำเป็น
