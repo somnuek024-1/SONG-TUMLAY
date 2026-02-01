@@ -24,7 +24,6 @@ def process_data(df):
     latest_year = df['Year'].max()
     df_latest = df[df['Year'] == latest_year].copy()
     
-    # Logic การคำนวณ (เหมือนหน้า Home)
     prov_pop_mean = df_latest.groupby('Province')['Total_Pop'].transform('mean').replace(0, 1)
     pop_ratio = df_latest['Total_Pop'] / prov_pop_mean
     df_latest['Factor_Density'] = np.power(pop_ratio, 0.3)
@@ -41,7 +40,7 @@ def process_data(df):
 
 df_display = process_data(df_all_years)
 
-# --- 3. Header Banner (Same Style as Home) ---
+# --- 3. Header Banner ---
 st.markdown("""
 <div style="
     background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=2670&auto=format&fit=crop');
@@ -86,70 +85,57 @@ if not df_display.empty:
         tam_list2 = sorted(df_display[(df_display['Province'] == prov2) & (df_display['Amphoe'] == amp2)]['Tambon'].unique())
         tam2 = st.selectbox("เลือกตำบล B", tam_list2, key="t2")
 
-    # ดึงข้อมูล
     row1 = df_display[(df_display['Province'] == prov1) & (df_display['Amphoe'] == amp1) & (df_display['Tambon'] == tam1)].iloc[0]
     row2 = df_display[(df_display['Province'] == prov2) & (df_display['Amphoe'] == amp2) & (df_display['Tambon'] == tam2)].iloc[0]
 
     st.markdown("---")
 
-    # --- 5. "วัดกันที่ตัวเลขจริง" (Head-to-Head) ---
+    # --- 5. Head-to-Head Comparison ---
     st.markdown("""
         <div style="font-size:24px; font-weight:bold; margin-bottom:20px; display:flex; align-items:center;">
             ⚡ วัดกันที่ตัวเลขจริง (Head-to-Head)
         </div>
     """, unsafe_allow_html=True)
 
-    # Function สร้างการ์ดเปรียบเทียบ (แก้บั๊กตัวหนังสือหาย + ดีไซน์ใหม่)
-    def create_compare_card(title, val1, val2, unit, color_theme="#1A365D"):
-        # หาผู้ชนะ
+    # ✅ แก้ไข: เขียน HTML ชิดซ้ายสุด เพื่อไม่ให้กลายเป็น Code Block
+    def create_compare_card(title, val1, val2, unit):
         winner = "A" if val1 > val2 else ("B" if val2 > val1 else "Draw")
         color_a = "#2ECC71" if winner == "A" else "#BDC3C7"
         color_b = "#2ECC71" if winner == "B" else "#BDC3C7"
         
-        # HTML Card
+        # คำนวณความกว้างหลอดพลัง (ป้องกันหารด้วย 0)
+        total = val1 + val2
+        if total == 0:
+            flex_a, flex_b = 1, 1
+        else:
+            flex_a = (val1 / total) * 100
+            flex_b = (val2 / total) * 100
+
         return f"""
-        <div style="
-            background-color: white; 
-            padding: 20px; 
-            border-radius: 15px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
-            border: 1px solid #eee; 
-            margin-bottom: 20px;
-        ">
-            <div style="font-size:16px; font-weight:bold; color:#555; margin-bottom:15px; text-align:center;">{title}</div>
-            
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div style="text-align:center; width:40%;">
-                    <div style="font-size:22px; font-weight:900; color:#1A365D;">{val1:,.0f}</div>
-                    <div style="font-size:12px; color:#888;">{unit}</div>
-                    <div style="font-size:12px; font-weight:bold; color:{color_a}; margin-top:5px;">{ "🏆 WIN" if winner=="A" else "&nbsp;" }</div>
-                </div>
-
-                <div style="width:20%; text-align:center;">
-                    <div style="
-                        width:35px; height:35px; 
-                        background:#F0F2F6; color:#888; 
-                        border-radius:50%; 
-                        display:flex; align-items:center; justify-content:center; 
-                        font-weight:bold; font-size:12px; 
-                        margin:0 auto;
-                    ">VS</div>
-                </div>
-
-                <div style="text-align:center; width:40%;">
-                    <div style="font-size:22px; font-weight:900; color:#1A365D;">{val2:,.0f}</div>
-                    <div style="font-size:12px; color:#888;">{unit}</div>
-                    <div style="font-size:12px; font-weight:bold; color:{color_b}; margin-top:5px;">{ "🏆 WIN" if winner=="B" else "&nbsp;" }</div>
-                </div>
-            </div>
-            
-            <div style="margin-top:15px; display:flex; height:6px; border-radius:3px; overflow:hidden;">
-                <div style="flex:{val1}; background:{color_a};"></div>
-                <div style="width:2px; background:white;"></div>
-                <div style="flex:{val2}; background:{color_b};"></div>
-            </div>
+<div style="background-color: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #eee; margin-bottom: 20px;">
+    <div style="font-size:16px; font-weight:bold; color:#555; margin-bottom:15px; text-align:center;">{title}</div>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="text-align:center; width:40%;">
+            <div style="font-size:22px; font-weight:900; color:#1A365D;">{val1:,.0f}</div>
+            <div style="font-size:12px; color:#888;">{unit}</div>
+            <div style="font-size:12px; font-weight:bold; color:{color_a}; margin-top:5px;">{ "🏆 WIN" if winner=="A" else "&nbsp;" }</div>
         </div>
-        """
+        <div style="width:20%; text-align:center;">
+            <div style="width:35px; height:35px; background:#F0F2F6; color:#888; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:12px; margin:0 auto;">VS</div>
+        </div>
+        <div style="text-align:center; width:40%;">
+            <div style="font-size:22px; font-weight:900; color:#1A365D;">{val2:,.0f}</div>
+            <div style="font-size:12px; color:#888;">{unit}</div>
+            <div style="font-size:12px; font-weight:bold; color:{color_b}; margin-top:5px;">{ "🏆 WIN" if winner=="B" else "&nbsp;" }</div>
+        </div>
+    </div>
+    <div style="margin-top:15px; display:flex; height:6px; border-radius:3px; overflow:hidden;">
+        <div style="width:{flex_a}%; background:{color_a};"></div>
+        <div style="width:2px; background:white;"></div>
+        <div style="width:{flex_b}%; background:{color_b};"></div>
+    </div>
+</div>
+"""
 
     c_price, c_income, c_pop = st.columns(3)
     
@@ -166,7 +152,6 @@ if not df_display.empty:
     col_score_chart, col_score_card = st.columns([2, 1])
     
     with col_score_chart:
-        # กราฟแท่งแนวนอน (Bar Chart)
         labels = ['คะแนนรวม', 'Factor ทำเล', 'Factor ความหนาแน่น']
         val1 = [row1['Total_Score'], row1['Factor_Centrality']*3, row1['Factor_Density']*3]
         val2 = [row2['Total_Score'], row2['Factor_Centrality']*3, row2['Factor_Density']*3]
@@ -191,18 +176,19 @@ if not df_display.empty:
         st.plotly_chart(fig, use_container_width=True)
 
     with col_score_card:
-        # การ์ดสรุปผู้ชนะ
         score_diff = abs(row1['Total_Score'] - row2['Total_Score'])
         winner_name = row1['Tambon'] if row1['Total_Score'] > row2['Total_Score'] else row2['Tambon']
         
-        st.markdown(f"""
-        <div style="background:#F4F6F7; padding:25px; border-radius:12px; text-align:center; height:100%; border:2px solid #BDC3C7;">
-            <div style="font-size:18px; color:#555;">ผู้ชนะคือ</div>
-            <div style="font-size:32px; font-weight:900; color:#2ECC71; margin:10px 0;">{winner_name}</div>
-            <div style="font-size:14px; color:#7F8C8D;">คะแนนนำอยู่ <b>{score_diff:.1f}</b> แต้ม</div>
-            <div style="margin-top:20px; font-size:50px;">👑</div>
-        </div>
-        """, unsafe_allow_html=True)
+        # แก้ไข HTML Card Score ให้ชิดซ้ายเพื่อความปลอดภัย
+        score_html = f"""
+<div style="background:#F4F6F7; padding:25px; border-radius:12px; text-align:center; height:100%; border:2px solid #BDC3C7;">
+    <div style="font-size:18px; color:#555;">ผู้ชนะคือ</div>
+    <div style="font-size:32px; font-weight:900; color:#2ECC71; margin:10px 0;">{winner_name}</div>
+    <div style="font-size:14px; color:#7F8C8D;">คะแนนนำอยู่ <b>{score_diff:.1f}</b> แต้ม</div>
+    <div style="margin-top:20px; font-size:50px;">👑</div>
+</div>
+"""
+        st.markdown(score_html, unsafe_allow_html=True)
 
 else:
     st.error("ไม่พบข้อมูล กรุณาตรวจสอบไฟล์ CSV")
