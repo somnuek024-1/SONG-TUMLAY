@@ -27,7 +27,6 @@ def apply_custom_style():
     
     if target_file:
         img_base64 = get_base64_of_bin_file(target_file)
-        # CSS สำหรับฝังโลโก้ลงในเมนู
         logo_css = f"""
             background-image: url("data:image/png;base64,{img_base64}");
             background-repeat: no-repeat;
@@ -80,32 +79,45 @@ def apply_custom_style():
         }}
         
         /* ============================================================
-           ✅ ส่วนที่แก้ไข: บังคับการ์ดให้เป็นสีขาวเสมอ + ตัวหนังสือสีดำ
+           ✅ ส่วนที่แก้ไข: บังคับการ์ดให้สูงเท่ากันและจัดระเบียบภายใน
            ============================================================ */
         .listing-card, .property-card, .stat-card {{
-            background-color: #FFFFFF !important;  /* พื้นหลังสีขาวเสมอ */
+            background-color: #FFFFFF !important;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            border: 1px solid #E0E0E0;             /* ขอบสีเทาอ่อน */
-            padding: 25px; 
+            border: 1px solid #E0E0E0;
+            padding: 25px;
+
+            /* 1. ตั้งค่าความสูงขั้นต่ำ (แก้เลขนี้ถ้าต้องการให้สูง/เตี้ยลง) */
+            min-height: 180px; 
+            
+            /* 2. ใช้ Flexbox จัดระเบียบแนวตั้ง */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* ดันเนื้อหาหัว-ท้ายแยกกัน */
         }}
 
-        /* บังคับตัวหนังสือข้างในให้เป็นสีเข้ม (ไม่งั้น Dark Mode จะมองไม่เห็น) */
+        /* เทคนิคพิเศษ: ดัน div ตัวสุดท้าย (ส่วนราคา) ไปชิดขอบล่างเสมอ */
+        .property-card > div:last-child, .listing-card .card-body > div:last-child {{
+             margin-top: auto !important; /* เขียนทับ inline style เดิมใน home.py */
+             padding-top: 15px;          /* เพิ่มช่องว่างเหนือราคา */
+        }}
+
+        /* บังคับตัวหนังสือข้างในให้เป็นสีเข้ม */
         .listing-card div, .property-card div, .stat-card div {{
-            color: #31333F; /* สีเทาเข้มเกือบดำ */
+            color: #31333F; 
         }}
 
-        /* ยกเว้น: ราคาให้เป็นสีเขียวเหมือนเดิม */
+        /* ยกเว้น: ราคาให้เป็นสีเขียว */
         .card-price, div[style*="color:#2ECC71"] {{
             color: #2ECC71 !important;
         }}
         
-        /* ยกเว้น: ป้ายคะแนนพื้นหลังน้ำเงิน ให้ตัวหนังสือเป็นสีขาว */
+        /* ยกเว้น: ป้ายคะแนน */
         div[style*="background:#1A365D"] {{
             color: #FFFFFF !important;
         }}
         
-        /* สไตล์ Badge VS ในหน้าเปรียบเทียบ */
         .vs-badge {{
             background-color: #31333F; 
             color: #FFFFFF;
