@@ -134,63 +134,64 @@ if not df_display.empty:
         final_price = row['Est_Land_Price']
         
         # ✅ Dashboard Layout: ไม่มีเครื่องหมายคูณหาร เรียงเป็น Grid สวยงาม
+        # ใช้ triple quotes และเขียนชิดซ้ายเพื่อป้องกัน Syntax Error
         html_code = f"""
-        <style>
-            .metric-container {{
-                display: grid; 
-                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Responsive Grid */
-                gap: 20px; 
-                margin-bottom: 25px;
-            }}
-            .metric-card {{
-                background-color: white;
-                border-radius: 12px;
-                padding: 20px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-                position: relative;
-                overflow: hidden;
-                border: 1px solid rgba(0,0,0,0.05);
-            }}
-            .card-title {{ font-size: 16px; font-weight: bold; color: #555; margin-bottom: 10px; }}
-            .card-value {{ font-size: 28px; font-weight: 900; color: #333; }}
-            .card-icon {{ 
-                position: absolute; top: 15px; right: 15px; font-size: 40px; opacity: 0.2; 
-            }}
-            .card-footer {{ 
-                margin-top: 15px; font-size: 13px; font-weight: bold; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1); 
-            }}
-        </style>
+<style>
+    .metric-container {{
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+        gap: 20px; 
+        margin-bottom: 25px;
+    }}
+    .metric-card {{
+        background-color: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(0,0,0,0.05);
+    }}
+    .card-title {{ font-size: 16px; font-weight: bold; color: #555; margin-bottom: 10px; }}
+    .card-value {{ font-size: 28px; font-weight: 900; color: #333; }}
+    .card-icon {{ 
+        position: absolute; top: 15px; right: 15px; font-size: 40px; opacity: 0.2; 
+    }}
+    .card-footer {{ 
+        margin-top: 15px; font-size: 13px; font-weight: bold; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1); 
+    }}
+</style>
 
-        <div class="metric-container">
-            <div class="metric-card" style="background: #E3F2FD;">
-                <div class="card-title">ราคาตั้งต้น (Base)</div>
-                <div class="card-value" style="color:#1565C0;">฿{base_price:,.0f}</div>
-                <div class="card-icon">🏷️</div>
-                <div class="card-footer" style="color:#1565C0;">ราคาประเมินกรมที่ดิน</div>
-            </div>
+<div class="metric-container">
+    <div class="metric-card" style="background: #E3F2FD;">
+        <div class="card-title">ราคาตั้งต้น (Base)</div>
+        <div class="card-value" style="color:#1565C0;">฿{base_price:,.0f}</div>
+        <div class="card-icon">🏷️</div>
+        <div class="card-footer" style="color:#1565C0;">ราคาประเมินกรมที่ดิน</div>
+    </div>
 
-            <div class="metric-card" style="background: #FFF3E0;">
-                <div class="card-title">Density Factor</div>
-                <div class="card-value" style="color:#E65100;">x {density_fac:.2f}</div>
-                <div class="card-icon">👥</div>
-                <div class="card-footer" style="color:#E65100;">ปรับตามความหนาแน่น</div>
-            </div>
+    <div class="metric-card" style="background: #FFF3E0;">
+        <div class="card-title">Density Factor</div>
+        <div class="card-value" style="color:#E65100;">x {density_fac:.2f}</div>
+        <div class="card-icon">👥</div>
+        <div class="card-footer" style="color:#E65100;">ปรับตามความหนาแน่น</div>
+    </div>
 
-            <div class="metric-card" style="background: #F3E5F5;">
-                <div class="card-title">Location Factor</div>
-                <div class="card-value" style="color:#7B1FA2;">x {central_fac:.1f}</div>
-                <div class="card-icon">🏙️</div>
-                <div class="card-footer" style="color:#7B1FA2;">ปรับตามโซนเมือง</div>
-            </div>
+    <div class="metric-card" style="background: #F3E5F5;">
+        <div class="card-title">Location Factor</div>
+        <div class="card-value" style="color:#7B1FA2;">x {central_fac:.1f}</div>
+        <div class="card-icon">🏙️</div>
+        <div class="card-footer" style="color:#7B1FA2;">ปรับตามโซนเมือง</div>
+    </div>
 
-            <div class="metric-card" style="background: #E8F5E9; border: 2px solid #4CAF50;">
-                <div class="card-title">ราคาประเมิน AI</div>
-                <div class="card-value" style="color:#2E7D32;">฿{final_price:,.0f}</div>
-                <div class="card-icon" style="opacity:1;">💰</div>
-                <div class="card-footer" style="color:#2E7D32;">สรุปราคาขายจริง</div>
-            </div>
-        </div>
-        """
+    <div class="metric-card" style="background: #E8F5E9; border: 2px solid #4CAF50;">
+        <div class="card-title">ราคาประเมิน AI</div>
+        <div class="card-value" style="color:#2E7D32;">฿{final_price:,.0f}</div>
+        <div class="card-icon" style="opacity:1;">💰</div>
+        <div class="card-footer" style="color:#2E7D32;">สรุปราคาขายจริง</div>
+    </div>
+</div>
+"""
         st.markdown(html_code, unsafe_allow_html=True)
         
         c1, c2 = st.columns(2)
