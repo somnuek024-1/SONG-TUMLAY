@@ -23,11 +23,9 @@ def apply_custom_style():
     
     # 1. เตรียมรูปโลโก้
     target_file = find_logo_file()
-    if not target_file:
-        # ถ้าหาไม่เจอ ให้แจ้งเตือนเบาๆ (แต่ไม่ error)
-        logo_css = "" 
-        st.toast("⚠️ ไม่พบไฟล์ logo (logonobackground.png)", icon="⚠️")
-    else:
+    logo_css = ""
+    
+    if target_file:
         img_base64 = get_base64_of_bin_file(target_file)
         # CSS สำหรับฝังโลโก้ลงในเมนู
         logo_css = f"""
@@ -35,7 +33,7 @@ def apply_custom_style():
             background-repeat: no-repeat;
             background-position: center top 20px; 
             background-size: 280px auto; /* ขนาดรูป */
-            padding-top: 260px !important; /* ดันเมนูลงมา (ปรับเลขนี้ถ้าทับรูป) */
+            padding-top: 260px !important; /* ดันเมนูลงมา */
         """
 
     # 2. ฝัง CSS ทั้งหมด
@@ -89,8 +87,6 @@ def apply_custom_style():
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             border: 1px solid rgba(128, 128, 128, 0.2);
-            
-            /* ✅ จุดสำคัญ: เพิ่ม Padding เพื่อไม่ให้ตัวหนังสือชิดขอบ */
             padding: 25px; 
         }}
         
@@ -103,8 +99,5 @@ def apply_custom_style():
         }}
     </style>
     """, unsafe_allow_html=True)
-
-    # 3. ใส่เส้นคั่นด้านล่างเมนู
-    with st.sidebar:
-        st.write("") 
-        st.markdown('<hr class="sidebar-divider">', unsafe_allow_html=True)
+    
+    # ❌ ลบส่วน with st.sidebar ด้านล่างนี้ออกไปแล้ว เพื่อไม่ให้มีช่องว่างเกินจำเป็น
