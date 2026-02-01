@@ -106,7 +106,6 @@ with col_list:
     if not df_display.empty:
         top_list = df_display.sort_values('Total_Score', ascending=False).head(5)
         for _, row in top_list.iterrows():
-            # ✅ ปรับแต่ง HTML ตรงนี้ให้ตัวหนังสือใหญ่ขึ้นและสวยงาม
             st.markdown(f"""
             <div class="property-card">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -117,7 +116,7 @@ with col_list:
                 <div style="margin-top:8px; font-weight:bold; color:#2ECC71; font-size:22px;">฿{row['Est_Land_Price']:,.0f}</div>
             </div>""", unsafe_allow_html=True)
 
-# --- 5. Price Breakdown Section (กู้คืนกลับมาแล้ว) ---
+# --- 5. Price Breakdown Section (พื้นหลังขาว always) ---
 st.markdown("---")
 st.subheader("🧮 แกะสูตรคำนวณราคา (Price Breakdown)")
 st.info("เลือกตำบลด้านล่าง เพื่อดูว่าทฤษฎีแต่ละตัวส่งผลต่อราคาอย่างไร")
@@ -134,27 +133,27 @@ if not df_display.empty:
         central_fac = row['Factor_Centrality']
         final_price = row['Est_Land_Price']
         
-        # HTML แสดงสูตรคำนวณสวยๆ
+        # HTML แสดงสูตรคำนวณสวยๆ (Hardcoded White Background)
         st.markdown(f"""
-        <div style="background-color:var(--secondary-background-color); border:1px dashed #4CAF50; border-radius:10px; padding:20px; text-align:center; margin-bottom:20px;">
+        <div style="background-color:#FFFFFF; border:1px dashed #4CAF50; border-radius:10px; padding:20px; text-align:center; margin-bottom:20px; color:#333333;">
             <div style="display:inline-block; margin:0 15px;">
-                <div style="font-size:24px; font-weight:bold;">{base_price:,.0f}</div>
-                <div style="font-size:12px; opacity:0.7;">ราคาพื้นฐาน</div>
+                <div style="font-size:24px; font-weight:bold; color:#333333;">{base_price:,.0f}</div>
+                <div style="font-size:12px; opacity:0.7; color:#555555;">ราคาพื้นฐาน</div>
             </div>
             <span style="font-size:20px; color:#4CAF50;">×</span>
             <div style="display:inline-block; margin:0 15px;">
                 <div style="font-size:24px; font-weight:bold; color:#F39C12;">{density_fac:.2f}</div>
-                <div style="font-size:12px; opacity:0.7;">ปัจจัยความหนาแน่น</div>
+                <div style="font-size:12px; opacity:0.7; color:#555555;">ปัจจัยความหนาแน่น</div>
             </div>
             <span style="font-size:20px; color:#4CAF50;">×</span>
             <div style="display:inline-block; margin:0 15px;">
                 <div style="font-size:24px; font-weight:bold; color:#3498DB;">{central_fac:.1f}</div>
-                <div style="font-size:12px; opacity:0.7;">ปัจจัยความเป็นเมือง</div>
+                <div style="font-size:12px; opacity:0.7; color:#555555;">ปัจจัยความเป็นเมือง</div>
             </div>
             <span style="font-size:20px; color:#4CAF50;">=</span>
             <div style="display:inline-block; margin:0 15px;">
                 <div style="font-size:24px; font-weight:bold; color:#2ECC71;">{final_price:,.0f}</div>
-                <div style="font-size:12px; opacity:0.7;">ราคาประเมิน AI</div>
+                <div style="font-size:12px; opacity:0.7; color:#555555;">ราคาประเมิน AI</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -184,5 +183,6 @@ if not df_display.empty:
             fig.update_layout(showlegend=False, height=250, 
                               paper_bgcolor='rgba(0,0,0,0)', 
                               plot_bgcolor='rgba(0,0,0,0)',
-                              margin=dict(l=20, r=20, t=20, b=20))
+                              margin=dict(l=20, r=20, t=20, b=20),
+                              font=dict(color=st.get_option("theme.textColor")))
             st.plotly_chart(fig, use_container_width=True)
