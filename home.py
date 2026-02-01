@@ -116,7 +116,7 @@ with col_list:
                 <div style="margin-top:8px; font-weight:bold; color:#2ECC71; font-size:22px;">฿{row['Est_Land_Price']:,.0f}</div>
             </div>""", unsafe_allow_html=True)
 
-# --- 5. Price Breakdown Section (พื้นหลังขาว always) ---
+# --- 5. Price Breakdown Section (ปรับสีตัวหนังสือให้เข้มชัดเจน) ---
 st.markdown("---")
 st.subheader("🧮 แกะสูตรคำนวณราคา (Price Breakdown)")
 st.info("เลือกตำบลด้านล่าง เพื่อดูว่าทฤษฎีแต่ละตัวส่งผลต่อราคาอย่างไร")
@@ -133,28 +133,36 @@ if not df_display.empty:
         central_fac = row['Factor_Centrality']
         final_price = row['Est_Land_Price']
         
-        # HTML แสดงสูตรคำนวณสวยๆ (Hardcoded White Background)
+        # ✅ แก้ไข CSS: ปรับสีตัวเลขให้เข้มขึ้น (Dark Orange, Dark Blue, Dark Green)
         st.markdown(f"""
-        <div style="background-color:#FFFFFF; border:1px dashed #4CAF50; border-radius:10px; padding:20px; text-align:center; margin-bottom:20px; color:#333333;">
+        <div style="background-color:#FFFFFF; border:2px solid #E0E0E0; border-radius:12px; padding:20px; text-align:center; margin-bottom:20px; color:#333333; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            
             <div style="display:inline-block; margin:0 15px;">
-                <div style="font-size:24px; font-weight:bold; color:#333333;">{base_price:,.0f}</div>
-                <div style="font-size:12px; opacity:0.7; color:#555555;">ราคาพื้นฐาน</div>
+                <div style="font-size:26px; font-weight:900; color:#2C3E50;">{base_price:,.0f}</div>
+                <div style="font-size:14px; font-weight:bold; color:#555555;">ราคาพื้นฐาน</div>
             </div>
-            <span style="font-size:20px; color:#4CAF50;">×</span>
+
+            <span style="font-size:24px; font-weight:900; color:#BDC3C7;">×</span>
+
             <div style="display:inline-block; margin:0 15px;">
-                <div style="font-size:24px; font-weight:bold; color:#F39C12;">{density_fac:.2f}</div>
-                <div style="font-size:12px; opacity:0.7; color:#555555;">ปัจจัยความหนาแน่น</div>
+                <div style="font-size:26px; font-weight:900; color:#D35400;">{density_fac:.2f}</div>
+                <div style="font-size:14px; font-weight:bold; color:#555555;">ปัจจัยความหนาแน่น</div>
             </div>
-            <span style="font-size:20px; color:#4CAF50;">×</span>
+
+            <span style="font-size:24px; font-weight:900; color:#BDC3C7;">×</span>
+
             <div style="display:inline-block; margin:0 15px;">
-                <div style="font-size:24px; font-weight:bold; color:#3498DB;">{central_fac:.1f}</div>
-                <div style="font-size:12px; opacity:0.7; color:#555555;">ปัจจัยความเป็นเมือง</div>
+                <div style="font-size:26px; font-weight:900; color:#2980B9;">{central_fac:.1f}</div>
+                <div style="font-size:14px; font-weight:bold; color:#555555;">ปัจจัยความเป็นเมือง</div>
             </div>
-            <span style="font-size:20px; color:#4CAF50;">=</span>
+
+            <span style="font-size:24px; font-weight:900; color:#27AE60;">=</span>
+
             <div style="display:inline-block; margin:0 15px;">
-                <div style="font-size:24px; font-weight:bold; color:#2ECC71;">{final_price:,.0f}</div>
-                <div style="font-size:12px; opacity:0.7; color:#555555;">ราคาประเมิน AI</div>
+                <div style="font-size:28px; font-weight:900; color:#27AE60;">{final_price:,.0f}</div>
+                <div style="font-size:14px; font-weight:bold; color:#555555;">ราคาประเมิน AI</div>
             </div>
+
         </div>
         """, unsafe_allow_html=True)
         
@@ -178,8 +186,9 @@ if not df_display.empty:
                 'Price': [base_price, final_price]
             })
             fig = px.bar(comp_data, x='Type', y='Price', color='Type', 
-                         color_discrete_map={'ราคาพื้นฐาน':'#A0AEC0', 'ราคาประเมิน AI':'#2ECC71'},
+                         color_discrete_map={'ราคาพื้นฐาน':'#95A5A6', 'ราคาประเมิน AI':'#27AE60'},
                          text_auto='.2s')
+            
             fig.update_layout(showlegend=False, height=250, 
                               paper_bgcolor='rgba(0,0,0,0)', 
                               plot_bgcolor='rgba(0,0,0,0)',
