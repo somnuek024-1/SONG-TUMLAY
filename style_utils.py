@@ -18,8 +18,6 @@ def find_logo_file():
     return None
 
 def apply_custom_style():
-    """ฟังก์ชันหลักสำหรับฝัง CSS"""
-    
     target_file = find_logo_file()
     logo_css = ""
     
@@ -42,7 +40,6 @@ def apply_custom_style():
             color: var(--text-color);
         }}
 
-        /* --- Sidebar Styling --- */
         [data-testid="stSidebar"] > div:first-child {{
             background: linear-gradient(180deg, #1A365D 0%, #142847 100%);
         }}
@@ -73,7 +70,7 @@ def apply_custom_style():
         }}
         
         /* ============================================================
-           ✅ Desktop Style (จอคอม): ความสูงเท่ากัน สวยงาม
+           🖥️ Desktop Style (จอคอม/จอใหญ่)
            ============================================================ */
         .listing-card, .property-card, .stat-card {{
             background-color: #FFFFFF !important;
@@ -82,7 +79,7 @@ def apply_custom_style():
             border: 1px solid #E0E0E0;
             padding: 20px;
             
-            /* บนคอมฯ บังคับสูงเท่ากัน */
+            /* ความสูงมาตรฐานสำหรับจอคอม */
             min-height: 340px; 
             
             display: flex;
@@ -90,33 +87,33 @@ def apply_custom_style():
             justify-content: space-between;
         }}
 
-        /* ดันราคาไปล่างสุด (เฉพาะบนคอม) */
         .property-card > div:last-child, .listing-card .card-body > div:last-child {{
              margin-top: auto !important; 
              padding-top: 15px;
         }}
 
         /* ============================================================
-           📱 Mobile Fix: แก้ปัญหาช่องว่างเยอะเกินบนมือถือ
+           📱 Mobile & Tablet Fix (แก้ปัญหาช่องว่าง)
+           ⚠️ ขยายขอบเขตเป็น 1024px เพื่อให้ครอบคลุมมือถือจอใหญ่และแท็บเล็ต
            ============================================================ */
-        @media only screen and (max-width: 768px) {{
+        @media only screen and (max-width: 1024px) {{
             .listing-card, .property-card, .stat-card {{
-                min-height: auto !important; /* ยกเลิกการบังคับความสูง */
-                height: auto !important;     /* ให้สูงตามเนื้อหาจริง */
-                padding: 15px !important;    /* ลดขอบลงนิดหน่อยเพื่อประหยัดที่ */
-                margin-bottom: 15px;         /* เว้นระยะห่างระหว่างการ์ด */
-                display: block !important;   /* ยกเลิก Flex เพื่อให้เรียงตามปกติ */
+                min-height: 0px !important;  /* ✅ บังคับให้เริ่มที่ 0 */
+                height: auto !important;     /* ✅ ให้สูงเท่าเนื้อหาจริงเท่านั้น */
+                padding: 15px !important;
+                margin-bottom: 15px;
+                display: block !important;   /* ✅ ยกเลิก Flexbox */
             }}
             
-            /* ยกเลิกการดันราคาไปล่างสุด ให้มันต่อจากเนื้อหาเลย */
+            /* ดึงส่วนราคาขึ้นมา (ไม่ต้องดันไปล่างสุด) */
             .property-card > div:last-child {{
-                margin-top: 10px !important;
+                margin-top: 15px !important; 
                 padding-top: 10px !important;
-                border-top: 1px dashed #eee; /* เพิ่มเส้นประคั่นสวยๆ แทน */
+                border-top: 1px dashed #eee;
             }}
         }}
 
-        /* --- สีตัวหนังสือ --- */
+        /* --- Color Styles --- */
         .listing-card div, .property-card div, .stat-card div {{
             color: #31333F; 
         }}
