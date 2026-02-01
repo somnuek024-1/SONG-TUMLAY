@@ -1,82 +1,208 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
 import numpy as np
-import folium
-from streamlit_folium import st_folium
-from style_utils import apply_custom_style # ✅
+import plotly.graph_objects as go
+from style_utils import apply_custom_style
 
-st.set_page_config(page_title="เปรียบเทียบทำเล - SongTumLay", layout="wide", page_icon="⚖️")
-apply_custom_style() # ✅
+# --- 1. Config ---
+st.set_page_config(page_title="Compare Locations", layout="wide", page_icon="⚖️")
+apply_custom_style()
 
+# --- 2. Data Loading ---
 @st.cache_data
 def load_data():
     try:
         df = pd.read_csv("final_master_data_multiyear.csv")
-        latest_year = df['Year'].max()
-        df = df[df['Year'] == latest_year].copy()
-        df['Full_Location'] = df['Amphoe'] + ", " + df['Province']
-        df['Score_Price'] = (df['Avg_Land_Price'] / df['Avg_Land_Price'].max()) * 100
-        df['Score_Income'] = (df['Avg_Income'] / df['Avg_Income'].max()) * 100
-        df['Score_Pop'] = (df['Total_Pop'] / df['Total_Pop'].max()) * 100
         return df
-    except: return pd.DataFrame()
+    except FileNotFoundError: return pd.DataFrame()
 
-def get_coordinates(province_name):
-    coords = { "เชียงใหม่": [18.7883, 98.9853], "ขอนแก่น": [16.4322, 102.8236], "ภูเก็ต": [7.8804, 98.3923], "กรุงเทพมหานคร": [13.7563, 100.5018], "นครราชสีมา": [14.9799, 102.0978], "ชลบุรี": [13.3611, 100.9847], "สงขลา": [7.1988, 100.5951], "อุดรธานี": [17.4138, 102.7872], "ประจวบคีรีขันธ์": [11.8124, 99.7973], "ระยอง": [12.6815, 101.2816], "พระนครศรีอยุธยา": [14.3532, 100.5684], "สุราษฎร์ธานี": [9.1382, 99.3217], "เชียงราย": [19.9105, 99.8406], "อุบลราชธานี": [15.2448, 104.8473], "พิษณุโลก": [16.8211, 100.2659], "กาญจนบุรี": [14.0225, 99.5327] }
-    return coords.get(province_name, [13.7563, 100.5018])
+df_all_years = load_data()
 
-df = load_data()
+@st.cache_data
+def process_data(df):
+    if df.empty: return pd.DataFrame()
+    latest_year = df['Year'].max()
+    df_latest = df[df['Year'] == latest_year].copy()
+    
+    # Logic การคำนวณ (เหมือนหน้า Home)
+    prov_pop_mean = df_latest.groupby('Province')['Total_Pop'].transform('mean').replace(0, 1)
+    pop_ratio = df_latest['Total_Pop'] / prov_pop_mean
+    df_latest['Factor_Density'] = np.power(pop_ratio, 0.3)
+    df_latest['Factor_Centrality'] = df_latest['Amphoe'].apply(lambda x: 1.2 if ('เมือง' in str(x) or 'เขต' in str(x)) else 1.0)
+    df_latest['Factor_Total'] = (df_latest['Factor_Density'] * df_latest['Factor_Centrality']).clip(0.5, 3.0)
+    df_latest['Est_Land_Price'] = df_latest['Avg_Land_Price'] * df_latest['Factor_Total']
+    
+    max_inc = df_latest['Avg_Income'].max() or 1
+    max_land = df_latest['Est_Land_Price'].max() or 1
+    max_pop = df_latest['Total_Pop'].max() or 1
+    df_latest['Total_Score'] = ((df_latest['Avg_Income']/max_inc * 3) + (df_latest['Est_Land_Price']/max_land * 2) + (df_latest['Total_Pop']/max_pop * 5)).round(1)
+    
+    return df_latest
 
-st.markdown("""<div style="text-align:center; padding:40px; background:linear-gradient(120deg, var(--secondary-background-color), var(--background-color)); border-radius:20px; margin-bottom:30px; box-shadow:0 4px 6px rgba(0,0,0,0.05); border:1px solid rgba(128,128,128,0.1);"><div style="font-size:36px; font-weight:700;">⚖️ Compare Locations</div><div style="opacity:0.7;">เปรียบเทียบศักยภาพทำเล</div></div>""", unsafe_allow_html=True)
+df_display = process_data(df_all_years)
 
-st.sidebar.markdown("### ⚡ เลือกคู่เปรียบเทียบ")
-col1, col2 = st.columns(2)
-locations_list = sorted(df['Full_Location'].unique())
+# --- 3. Header Banner (Same Style as Home) ---
+st.markdown("""
+<div style="
+    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=2670&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    padding: 60px 20px;
+    border-radius: 12px;
+    text-align: center;
+    margin-bottom: 30px;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+">
+    <div style="font-size: 48px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;">
+        COMPARE LOCATIONS
+    </div>
+    <div style="font-size: 18px; font-weight: 300; opacity: 0.9;">
+        เปรียบเทียบศักยภาพทำเลแบบ Head-to-Head
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-with col1:
-    idx1 = locations_list.index("เมืองเชียงใหม่, เชียงใหม่") if "เมืองเชียงใหม่, เชียงใหม่" in locations_list else 0
-    loc1_name = st.selectbox("เลือกทำเล A (ฟ้า)", locations_list, index=idx1)
-with col2:
-    idx2 = locations_list.index("เมืองขอนแก่น, ขอนแก่น") if "เมืองขอนแก่น, ขอนแก่น" in locations_list else 1
-    loc2_name = st.selectbox("เลือกทำเล B (เขียว)", locations_list, index=idx2)
+# --- 4. Location Selectors ---
+if not df_display.empty:
+    col_sel1, col_vs, col_sel2 = st.columns([1, 0.2, 1])
+    
+    with col_sel1:
+        st.markdown("### 🏙️ ทำเลที่ 1 (Location A)")
+        prov1 = st.selectbox("เลือกจังหวัด A", sorted(df_display['Province'].unique()), key="p1")
+        amp_list1 = sorted(df_display[df_display['Province'] == prov1]['Amphoe'].unique())
+        amp1 = st.selectbox("เลือกอำเภอ A", amp_list1, key="a1")
+        tam_list1 = sorted(df_display[(df_display['Province'] == prov1) & (df_display['Amphoe'] == amp1)]['Tambon'].unique())
+        tam1 = st.selectbox("เลือกตำบล A", tam_list1, key="t1")
+        
+    with col_vs:
+        st.markdown("<br><br><div style='text-align:center; font-size:30px; font-weight:bold; color:#BDC3C7;'>VS</div>", unsafe_allow_html=True)
+        
+    with col_sel2:
+        st.markdown("### 🏙️ ทำเลที่ 2 (Location B)")
+        prov2 = st.selectbox("เลือกจังหวัด B", sorted(df_display['Province'].unique()), index=min(1, len(df_display['Province'].unique())-1), key="p2")
+        amp_list2 = sorted(df_display[df_display['Province'] == prov2]['Amphoe'].unique())
+        amp2 = st.selectbox("เลือกอำเภอ B", amp_list2, key="a2")
+        tam_list2 = sorted(df_display[(df_display['Province'] == prov2) & (df_display['Amphoe'] == amp2)]['Tambon'].unique())
+        tam2 = st.selectbox("เลือกตำบล B", tam_list2, key="t2")
 
-if loc1_name and loc2_name:
-    data1 = df[df['Full_Location'] == loc1_name].iloc[0]
-    data2 = df[df['Full_Location'] == loc2_name].iloc[0]
+    # ดึงข้อมูล
+    row1 = df_display[(df_display['Province'] == prov1) & (df_display['Amphoe'] == amp1) & (df_display['Tambon'] == tam1)].iloc[0]
+    row2 = df_display[(df_display['Province'] == prov2) & (df_display['Amphoe'] == amp2) & (df_display['Tambon'] == tam2)].iloc[0]
+
     st.markdown("---")
-    
-    st.markdown("#### 📊 คะแนนศักยภาพ")
-    cats = ['ราคาที่ดิน', 'รายได้', 'ประชากร']
-    fig = go.Figure()
-    fig.add_trace(go.Bar(y=cats, x=[data1['Score_Price'], data1['Score_Income'], data1['Score_Pop']], name=data1['Amphoe'], orientation='h', marker_color='#3498DB', opacity=0.9, textposition='auto'))
-    fig.add_trace(go.Bar(y=cats, x=[data2['Score_Price'], data2['Score_Income'], data2['Score_Pop']], name=data2['Amphoe'], orientation='h', marker_color='#2ECC71', opacity=0.9, textposition='auto'))
-    fig.update_layout(barmode='group', height=350, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', legend=dict(orientation="h", y=1.1))
-    st.plotly_chart(fig, use_container_width=True)
-    
-    st.markdown("#### ⚡ วัดกันที่ตัวเลขจริง")
-    c_s1, c_s2, c_s3 = st.columns(3)
-    def create_stat(t, v1, v2, u):
-        diff = v1 - v2
-        wc = "color:#3498DB;" if v1 > v2 else ("color:#2ECC71;" if v2 > v1 else "color:gray;")
-        wi = "🟦 A ชนะ" if v1 > v2 else ("🟩 B ชนะ" if v2 > v1 else "➖ เสมอ")
-        return f"""<div class="stat-card"><div style="font-weight:bold;">{t}</div><div style="display:flex; justify-content:space-between; margin-top:10px;"><span style="color:#3498DB; font-weight:bold;">{v1:,.0f}</span><div class="vs-badge">VS</div><span style="color:#2ECC71; font-weight:bold;">{v2:,.0f}</span></div><div style="font-size:12px; margin-top:5px; {wc}">{wi}</div></div>"""
-    
-    with c_s1: st.markdown(create_stat("ราคาที่ดิน", data1['Avg_Land_Price'], data2['Avg_Land_Price'], "฿"), unsafe_allow_html=True)
-    with c_s2: st.markdown(create_stat("รายได้", data1['Avg_Income'], data2['Avg_Income'], "฿"), unsafe_allow_html=True)
-    with c_s3: st.markdown(create_stat("ประชากร", data1['Total_Pop'], data2['Total_Pop'], "คน"), unsafe_allow_html=True)
 
-    st.markdown("#### 🗺️ แผนที่เปรียบเทียบตำแหน่ง")
-    lat1, lon1 = get_coordinates(data1['Province'])
-    lat2, lon2 = get_coordinates(data2['Province'])
-    m = folium.Map(location=[(lat1+lat2)/2, (lon1+lon2)/2], zoom_start=6, tiles="CartoDB positron")
-    folium.CircleMarker([lat1, lon1], radius=15, color="white", fill=True, fill_color="#3498DB", fill_opacity=1, popup=data1['Amphoe']).add_to(m)
-    folium.CircleMarker([lat2, lon2], radius=15, color="white", fill=True, fill_color="#2ECC71", fill_opacity=1, popup=data2['Amphoe']).add_to(m)
-    st_folium(m, height=400, use_container_width=True)
+    # --- 5. "วัดกันที่ตัวเลขจริง" (Head-to-Head) ---
+    st.markdown("""
+        <div style="font-size:24px; font-weight:bold; margin-bottom:20px; display:flex; align-items:center;">
+            ⚡ วัดกันที่ตัวเลขจริง (Head-to-Head)
+        </div>
+    """, unsafe_allow_html=True)
 
-    rec = ""
-    if data1['Score_Price'] < data2['Score_Price'] and data1['Score_Income'] > data2['Score_Income']: rec = f"✨ **{data1['Amphoe']}** คุ้มกว่า (ถูกกว่า+รวยกว่า)"
-    elif data2['Score_Price'] < data1['Score_Price'] and data2['Score_Income'] > data1['Score_Income']: rec = f"✨ **{data2['Amphoe']}** คุ้มกว่า (ถูกกว่า+รวยกว่า)"
-    elif data1['Total_Pop'] > data2['Total_Pop']: rec = f"🏙️ **{data1['Amphoe']}** คนเยอะกว่า เหมาะค้าขาย"
-    else: rec = f"🏙️ **{data2['Amphoe']}** คนเยอะกว่า เหมาะค้าขาย"
-    st.markdown(f"""<div style="background-color:var(--secondary-background-color); padding:20px; border-radius:10px; margin-top:20px; text-align:center; font-weight:600; border:1px solid rgba(128,128,128,0.1);">{rec}</div>""", unsafe_allow_html=True)
+    # Function สร้างการ์ดเปรียบเทียบ (แก้บั๊กตัวหนังสือหาย + ดีไซน์ใหม่)
+    def create_compare_card(title, val1, val2, unit, color_theme="#1A365D"):
+        # หาผู้ชนะ
+        winner = "A" if val1 > val2 else ("B" if val2 > val1 else "Draw")
+        color_a = "#2ECC71" if winner == "A" else "#BDC3C7"
+        color_b = "#2ECC71" if winner == "B" else "#BDC3C7"
+        
+        # HTML Card
+        return f"""
+        <div style="
+            background-color: white; 
+            padding: 20px; 
+            border-radius: 15px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+            border: 1px solid #eee; 
+            margin-bottom: 20px;
+        ">
+            <div style="font-size:16px; font-weight:bold; color:#555; margin-bottom:15px; text-align:center;">{title}</div>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="text-align:center; width:40%;">
+                    <div style="font-size:22px; font-weight:900; color:#1A365D;">{val1:,.0f}</div>
+                    <div style="font-size:12px; color:#888;">{unit}</div>
+                    <div style="font-size:12px; font-weight:bold; color:{color_a}; margin-top:5px;">{ "🏆 WIN" if winner=="A" else "&nbsp;" }</div>
+                </div>
+
+                <div style="width:20%; text-align:center;">
+                    <div style="
+                        width:35px; height:35px; 
+                        background:#F0F2F6; color:#888; 
+                        border-radius:50%; 
+                        display:flex; align-items:center; justify-content:center; 
+                        font-weight:bold; font-size:12px; 
+                        margin:0 auto;
+                    ">VS</div>
+                </div>
+
+                <div style="text-align:center; width:40%;">
+                    <div style="font-size:22px; font-weight:900; color:#1A365D;">{val2:,.0f}</div>
+                    <div style="font-size:12px; color:#888;">{unit}</div>
+                    <div style="font-size:12px; font-weight:bold; color:{color_b}; margin-top:5px;">{ "🏆 WIN" if winner=="B" else "&nbsp;" }</div>
+                </div>
+            </div>
+            
+            <div style="margin-top:15px; display:flex; height:6px; border-radius:3px; overflow:hidden;">
+                <div style="flex:{val1}; background:{color_a};"></div>
+                <div style="width:2px; background:white;"></div>
+                <div style="flex:{val2}; background:{color_b};"></div>
+            </div>
+        </div>
+        """
+
+    c_price, c_income, c_pop = st.columns(3)
+    
+    with c_price:
+        st.markdown(create_compare_card("💰 ราคาที่ดิน (Land Price)", row1['Est_Land_Price'], row2['Est_Land_Price'], "บาท"), unsafe_allow_html=True)
+    with c_income:
+        st.markdown(create_compare_card("💵 รายได้เฉลี่ย (Income)", row1['Avg_Income'], row2['Avg_Income'], "บาท/เดือน"), unsafe_allow_html=True)
+    with c_pop:
+        st.markdown(create_compare_card("👥 ประชากร (Population)", row1['Total_Pop'], row2['Total_Pop'], "คน"), unsafe_allow_html=True)
+
+    # --- 6. Total Score Comparison ---
+    st.markdown("### 🏆 สรุปคะแนนรวม (Total Score)")
+    
+    col_score_chart, col_score_card = st.columns([2, 1])
+    
+    with col_score_chart:
+        # กราฟแท่งแนวนอน (Bar Chart)
+        labels = ['คะแนนรวม', 'Factor ทำเล', 'Factor ความหนาแน่น']
+        val1 = [row1['Total_Score'], row1['Factor_Centrality']*3, row1['Factor_Density']*3]
+        val2 = [row2['Total_Score'], row2['Factor_Centrality']*3, row2['Factor_Density']*3]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            y=labels, x=val1, name=row1['Tambon'], orientation='h',
+            marker_color='#3498DB', text=[f"{v:.1f}" for v in val1], textposition='auto'
+        ))
+        fig.add_trace(go.Bar(
+            y=labels, x=val2, name=row2['Tambon'], orientation='h',
+            marker_color='#E67E22', text=[f"{v:.1f}" for v in val2], textposition='auto'
+        ))
+        
+        fig.update_layout(
+            barmode='group', height=350,
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(family="Sarabun", color=st.get_option("theme.textColor")),
+            margin=dict(l=10, r=10, t=10, b=10),
+            legend=dict(orientation="h", y=1.1)
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col_score_card:
+        # การ์ดสรุปผู้ชนะ
+        score_diff = abs(row1['Total_Score'] - row2['Total_Score'])
+        winner_name = row1['Tambon'] if row1['Total_Score'] > row2['Total_Score'] else row2['Tambon']
+        
+        st.markdown(f"""
+        <div style="background:#F4F6F7; padding:25px; border-radius:12px; text-align:center; height:100%; border:2px solid #BDC3C7;">
+            <div style="font-size:18px; color:#555;">ผู้ชนะคือ</div>
+            <div style="font-size:32px; font-weight:900; color:#2ECC71; margin:10px 0;">{winner_name}</div>
+            <div style="font-size:14px; color:#7F8C8D;">คะแนนนำอยู่ <b>{score_diff:.1f}</b> แต้ม</div>
+            <div style="margin-top:20px; font-size:50px;">👑</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+else:
+    st.error("ไม่พบข้อมูล กรุณาตรวจสอบไฟล์ CSV")
