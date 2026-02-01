@@ -116,7 +116,7 @@ with col_list:
                 <div style="margin-top:8px; font-weight:bold; color:#2ECC71; font-size:22px;">฿{row['Est_Land_Price']:,.0f}</div>
             </div>""", unsafe_allow_html=True)
 
-# --- 5. Price Breakdown Section (ปรับสีตัวหนังสือให้เข้มชัดเจน) ---
+# --- 5. Price Breakdown Section (แก้บั๊กเว้นวรรค + สีเข้ม) ---
 st.markdown("---")
 st.subheader("🧮 แกะสูตรคำนวณราคา (Price Breakdown)")
 st.info("เลือกตำบลด้านล่าง เพื่อดูว่าทฤษฎีแต่ละตัวส่งผลต่อราคาอย่างไร")
@@ -133,65 +133,14 @@ if not df_display.empty:
         central_fac = row['Factor_Centrality']
         final_price = row['Est_Land_Price']
         
-        # ✅ แก้ไข CSS: ปรับสีตัวเลขให้เข้มขึ้น (Dark Orange, Dark Blue, Dark Green)
-        st.markdown(f"""
-        <div style="background-color:#FFFFFF; border:2px solid #E0E0E0; border-radius:12px; padding:20px; text-align:center; margin-bottom:20px; color:#333333; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-            
-            <div style="display:inline-block; margin:0 15px;">
-                <div style="font-size:26px; font-weight:900; color:#2C3E50;">{base_price:,.0f}</div>
-                <div style="font-size:14px; font-weight:bold; color:#555555;">ราคาพื้นฐาน</div>
-            </div>
-
-            <span style="font-size:24px; font-weight:900; color:#BDC3C7;">×</span>
-
-            <div style="display:inline-block; margin:0 15px;">
-                <div style="font-size:26px; font-weight:900; color:#D35400;">{density_fac:.2f}</div>
-                <div style="font-size:14px; font-weight:bold; color:#555555;">ปัจจัยความหนาแน่น</div>
-            </div>
-
-            <span style="font-size:24px; font-weight:900; color:#BDC3C7;">×</span>
-
-            <div style="display:inline-block; margin:0 15px;">
-                <div style="font-size:26px; font-weight:900; color:#2980B9;">{central_fac:.1f}</div>
-                <div style="font-size:14px; font-weight:bold; color:#555555;">ปัจจัยความเป็นเมือง</div>
-            </div>
-
-            <span style="font-size:24px; font-weight:900; color:#27AE60;">=</span>
-
-            <div style="display:inline-block; margin:0 15px;">
-                <div style="font-size:28px; font-weight:900; color:#27AE60;">{final_price:,.0f}</div>
-                <div style="font-size:14px; font-weight:bold; color:#555555;">ราคาประเมิน AI</div>
-            </div>
-
-        </div>
-        """, unsafe_allow_html=True)
-        
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown("### 📊 วิเคราะห์ปัจจัย (Factors)")
-            if density_fac > 1.0:
-                st.success(f"📈 **Population Density (+):** ประชากรหนาแน่นกว่าค่าเฉลี่ย ({density_fac:.2f} เท่า)")
-            else:
-                st.warning(f"📉 **Population Density (-):** ประชากรน้อยกว่าค่าเฉลี่ย ({density_fac:.2f} เท่า)")
-                
-            if central_fac > 1.0:
-                st.info(f"🏙️ **Central Place Effect:** อยู่ในเขตอำเภอเมือง/ศูนย์กลาง")
-            else:
-                st.markdown(f"🏡 **Central Place Effect:** เป็นพื้นที่รอบนอก")
-
-        with c2:
-            st.markdown("### 📈 เทียบราคา")
-            comp_data = pd.DataFrame({
-                'Type': ['ราคาพื้นฐาน', 'ราคาประเมิน AI'],
-                'Price': [base_price, final_price]
-            })
-            fig = px.bar(comp_data, x='Type', y='Price', color='Type', 
-                         color_discrete_map={'ราคาพื้นฐาน':'#95A5A6', 'ราคาประเมิน AI':'#27AE60'},
-                         text_auto='.2s')
-            
-            fig.update_layout(showlegend=False, height=250, 
-                              paper_bgcolor='rgba(0,0,0,0)', 
-                              plot_bgcolor='rgba(0,0,0,0)',
-                              margin=dict(l=20, r=20, t=20, b=20),
-                              font=dict(color=st.get_option("theme.textColor")))
-            st.plotly_chart(fig, use_container_width=True)
+        # ✅ แก้ไขตรงนี้: เขียน HTML แบบชิดซ้ายสุด (ไม่เว้นวรรค) เพื่อป้องกันการแสดงผลผิด
+        html_code = f"""
+<div style="background-color:#FFFFFF; border:2px solid #E0E0E0; border-radius:12px; padding:20px; text-align:center; margin-bottom:20px; color:#333333; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+    <div style="display:inline-block; margin:0 15px;">
+        <div style="font-size:26px; font-weight:900; color:#2C3E50;">{base_price:,.0f}</div>
+        <div style="font-size:14px; font-weight:bold; color:#555555;">ราคาพื้นฐาน</div>
+    </div>
+    <span style="font-size:24px; font-weight:900; color:#BDC3C7;">×</span>
+    <div style="display:inline-block; margin:0 15px;">
+        <div style="font-size:26px; font-weight:900; color:#D35400;">{density_fac:.2f}</div>
+        <div style="font-size:14px
