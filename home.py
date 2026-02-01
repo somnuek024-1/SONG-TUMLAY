@@ -5,11 +5,12 @@ from streamlit_folium import st_folium
 from folium.plugins import MarkerCluster
 import numpy as np
 import plotly.express as px
-from style_utils import apply_custom_style  # ✅ เรียกใช้ไฟล์กลาง
+import plotly.graph_objects as go
+from style_utils import apply_custom_style
 
 # --- 1. Config ---
 st.set_page_config(page_title="SONGTUMLAY Pro", layout="wide", page_icon="🏙️")
-apply_custom_style() # ✅ ใช้งาน Theme
+apply_custom_style()
 
 # --- 2. Helper Functions & Data ---
 def get_coordinates(province_name):
@@ -116,7 +117,7 @@ with col_list:
                 <div style="margin-top:8px; font-weight:bold; color:#2ECC71; font-size:22px;">฿{row['Est_Land_Price']:,.0f}</div>
             </div>""", unsafe_allow_html=True)
 
-# --- 5. Price Breakdown Section (แก้บั๊กเว้นวรรค + สีเข้ม) ---
+# --- 5. Price Breakdown Section (New Layout) ---
 st.markdown("---")
 st.subheader("🧮 แกะสูตรคำนวณราคา (Price Breakdown)")
 st.info("เลือกตำบลด้านล่าง เพื่อดูว่าทฤษฎีแต่ละตัวส่งผลต่อราคาอย่างไร")
@@ -133,58 +134,126 @@ if not df_display.empty:
         central_fac = row['Factor_Centrality']
         final_price = row['Est_Land_Price']
         
-        # ✅ แก้ไขตรงนี้: เขียน HTML แบบชิดซ้ายสุด (ไม่เว้นวรรค) เพื่อป้องกันการแสดงผลผิด
+        # 1. Metric Cards (Grid Layout)
         html_code = f"""
-<div style="background-color:#FFFFFF; border:2px solid #E0E0E0; border-radius:12px; padding:20px; text-align:center; margin-bottom:20px; color:#333333; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-    <div style="display:inline-block; margin:0 15px;">
-        <div style="font-size:26px; font-weight:900; color:#2C3E50;">{base_price:,.0f}</div>
-        <div style="font-size:14px; font-weight:bold; color:#555555;">ราคาพื้นฐาน</div>
-    </div>
-    <span style="font-size:24px; font-weight:900; color:#BDC3C7;">×</span>
-    <div style="display:inline-block; margin:0 15px;">
-        <div style="font-size:26px; font-weight:900; color:#D35400;">{density_fac:.2f}</div>
-        <div style="font-size:14px; font-weight:bold; color:#555555;">ปัจจัยความหนาแน่น</div>
-    </div>
-    <span style="font-size:24px; font-weight:900; color:#BDC3C7;">×</span>
-    <div style="display:inline-block; margin:0 15px;">
-        <div style="font-size:26px; font-weight:900; color:#2980B9;">{central_fac:.1f}</div>
-        <div style="font-size:14px; font-weight:bold; color:#555555;">ปัจจัยความเป็นเมือง</div>
-    </div>
-    <span style="font-size:24px; font-weight:900; color:#27AE60;">=</span>
-    <div style="display:inline-block; margin:0 15px;">
-        <div style="font-size:28px; font-weight:900; color:#27AE60;">{final_price:,.0f}</div>
-        <div style="font-size:14px; font-weight:bold; color:#555555;">ราคาประเมิน AI</div>
-    </div>
-</div>
-"""
+        <style>
+            .metric-container {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }}
+            .metric-card {{ background-color: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; overflow: hidden; border: 1px solid rgba(0,0,0,0.05); }}
+            .card-title {{ font-size: 16px; font-weight: bold; color: #555; margin-bottom: 10px; }}
+            .card-value {{ font-size: 28px; font-weight: 900; color: #333; }}
+            .card-icon {{ position: absolute; top: 15px; right: 15px; font-size: 40px; opacity: 0.2; }}
+            .card-footer {{ margin-top: 15px; font-size: 13px; font-weight: bold; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1); }}
+        </style>
+        <div class="metric-container">
+            <div class="metric-card" style="background: #E3F2FD;">
+                <div class="card-title">ราคาตั้งต้น (Base)</div>
+                <div class="card-value" style="color:#1565C0;">฿{base_price:,.0f}</div>
+                <div class="card-icon">🏷️</div>
+                <div class="card-footer" style="color:#1565C0;">ราคาประเมินกรมที่ดิน</div>
+            </div>
+            <div class="metric-card" style="background: #FFF3E0;">
+                <div class="card-title">Density Factor</div>
+                <div class="card-value" style="color:#E65100;">x {density_fac:.2f}</div>
+                <div class="card-icon">👥</div>
+                <div class="card-footer" style="color:#E65100;">ปรับตามความหนาแน่น</div>
+            </div>
+            <div class="metric-card" style="background: #F3E5F5;">
+                <div class="card-title">Location Factor</div>
+                <div class="card-value" style="color:#7B1FA2;">x {central_fac:.1f}</div>
+                <div class="card-icon">🏙️</div>
+                <div class="card-footer" style="color:#7B1FA2;">ปรับตามโซนเมือง</div>
+            </div>
+            <div class="metric-card" style="background: #E8F5E9; border: 2px solid #4CAF50;">
+                <div class="card-title">ราคาประเมิน AI</div>
+                <div class="card-value" style="color:#2E7D32;">฿{final_price:,.0f}</div>
+                <div class="card-icon" style="opacity:1;">💰</div>
+                <div class="card-footer" style="color:#2E7D32;">สรุปราคาขายจริง</div>
+            </div>
+        </div>
+        """
         st.markdown(html_code, unsafe_allow_html=True)
         
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown("### 📊 วิเคราะห์ปัจจัย (Factors)")
+        # 2. Factor Analysis (Middle - Full Width)
+        st.subheader("📊 วิเคราะห์ปัจจัย (Factors Analysis)")
+        f1, f2 = st.columns(2)
+        with f1:
             if density_fac > 1.0:
-                st.success(f"📈 **Population Density (+):** ประชากรหนาแน่นกว่าค่าเฉลี่ย ({density_fac:.2f} เท่า)")
+                st.success(f"📈 **Population Density (+):** พื้นที่นี้มีประชากรหนาแน่นกว่าค่าเฉลี่ย ({density_fac:.2f} เท่า) ส่งผลให้ราคาที่ดินมีแนวโน้มสูงขึ้น")
             else:
-                st.warning(f"📉 **Population Density (-):** ประชากรน้อยกว่าค่าเฉลี่ย ({density_fac:.2f} เท่า)")
-                
+                st.warning(f"📉 **Population Density (-):** พื้นที่นี้มีความหนาแน่นประชากรน้อยกว่าค่าเฉลี่ย ({density_fac:.2f} เท่า) อาจเป็นพื้นที่อยู่อาศัยที่เงียบสงบ")
+        with f2:
             if central_fac > 1.0:
-                st.info(f"🏙️ **Central Place Effect:** อยู่ในเขตอำเภอเมือง/ศูนย์กลาง")
+                st.info(f"🏙️ **Central Place Effect:** ตำบลนี้ตั้งอยู่ในเขตอำเภอเมืองหรือศูนย์กลางเศรษฐกิจ มีสิ่งอำนวยความสะดวกครบครัน ทำให้ราคาสูงขึ้น")
             else:
-                st.markdown(f"🏡 **Central Place Effect:** เป็นพื้นที่รอบนอก")
+                st.markdown(f"""<div style="padding:10px; border-radius:5px; background-color:#F0F2F6; color:#31333F;">
+                🏡 <b>Central Place Effect:</b> เป็นพื้นที่รอบนอกหรือชานเมือง เหมาะสำหรับการอยู่อาศัยที่ไม่พลุกพล่าน ราคายังเข้าถึงง่าย
+                </div>""", unsafe_allow_html=True)
+        
+        st.write("") # Spacer
 
-        with c2:
-            st.markdown("### 📈 เทียบราคา")
-            comp_data = pd.DataFrame({
-                'Type': ['ราคาพื้นฐาน', 'ราคาประเมิน AI'],
-                'Price': [base_price, final_price]
-            })
-            fig = px.bar(comp_data, x='Type', y='Price', color='Type', 
-                         color_discrete_map={'ราคาพื้นฐาน':'#95A5A6', 'ราคาประเมิน AI':'#27AE60'},
-                         text_auto='.2s')
-            
-            fig.update_layout(showlegend=False, height=250, 
-                              paper_bgcolor='rgba(0,0,0,0)', 
-                              plot_bgcolor='rgba(0,0,0,0)',
-                              margin=dict(l=20, r=20, t=20, b=20),
-                              font=dict(color=st.get_option("theme.textColor")))
-            st.plotly_chart(fig, use_container_width=True)
+        # 3. Graph (Bottom - Full Width & Enhanced)
+        st.subheader("📈 เปรียบเทียบราคาและวิเคราะห์เชิงลึก (Price Comparison)")
+        
+        # คำนวณค่าเฉลี่ยของจังหวัด/พื้นที่ที่เลือกมา (เพื่อใช้เทียบ)
+        avg_area_price = df_display['Est_Land_Price'].mean()
+        
+        pct_change = ((final_price - base_price) / base_price) * 100
+        change_color = "#2ECC71" if pct_change >= 0 else "#E74C3C"
+        change_arrow = "▲" if pct_change >= 0 else "▼"
+
+        fig = go.Figure()
+
+        # แท่งที่ 1: ราคาพื้นฐาน
+        fig.add_trace(go.Bar(
+            x=['ราคาพื้นฐาน'], y=[base_price],
+            name='ราคาพื้นฐาน',
+            marker=dict(color=base_price, colorscale=[[0, '#CFD8DC'], [1, '#90A4AE']]),
+            text=[f"฿{base_price:,.0f}"], textposition='auto',
+            width=0.4
+        ))
+
+        # แท่งที่ 2: ราคาประเมิน AI
+        fig.add_trace(go.Bar(
+            x=['ราคาประเมิน AI'], y=[final_price],
+            name='ราคาประเมิน AI',
+            marker=dict(color=final_price, colorscale=[[0, '#A5D6A7'], [1, '#4CAF50']]),
+            text=[f"฿{final_price:,.0f}"], textposition='auto',
+            width=0.4
+        ))
+        
+        # เพิ่มเส้นค่าเฉลี่ย (Average Line)
+        fig.add_shape(
+            type="line",
+            x0=-0.5, x1=1.5,
+            y0=avg_area_price, y1=avg_area_price,
+            line=dict(color="#FF5722", width=2, dash="dash"),
+        )
+        fig.add_annotation(
+            x=1.5, y=avg_area_price,
+            text=f"ค่าเฉลี่ยในพื้นที่: ฿{avg_area_price:,.0f}",
+            showarrow=False, yshift=10, xanchor="right",
+            font=dict(color="#FF5722", size=12)
+        )
+
+        # Annotation: เปอร์เซ็นต์การเปลี่ยนแปลง
+        fig.add_annotation(
+            x=0.5, y=max(base_price, final_price) * 1.05,
+            text=f"{change_arrow} {pct_change:+.1f}% Impact",
+            showarrow=False,
+            font=dict(size=20, color=change_color, weight="bold"),
+            bgcolor="white", bordercolor=change_color, borderwidth=1, borderpad=5
+        )
+
+        fig.update_layout(
+            title="เปรียบเทียบราคา vs ปัจจัยผลกระทบ",
+            height=500, # ✅ ทำให้กราฟสูงขึ้นตามขอ
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(family="Sarabun", size=14, color=st.get_option("theme.textColor")),
+            yaxis=dict(showgrid=True, gridcolor='#eee'),
+            xaxis=dict(showgrid=False),
+            bargap=0.2,
+            showlegend=False
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
