@@ -20,7 +20,6 @@ def find_logo_file():
 def apply_custom_style():
     """ฟังก์ชันหลักสำหรับฝัง CSS"""
     
-    # 1. เตรียมรูปโลโก้
     target_file = find_logo_file()
     logo_css = ""
     
@@ -34,7 +33,6 @@ def apply_custom_style():
             padding-top: 260px !important; 
         """
 
-    # 2. ฝัง CSS ทั้งหมด
     st.markdown(f"""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
@@ -75,7 +73,7 @@ def apply_custom_style():
         }}
         
         /* ============================================================
-           ✅ ส่วนที่แก้ไข: ปรับความสูงการ์ดให้เท่ากัน (Equal Height)
+           ✅ Desktop Style (จอคอม): ความสูงเท่ากัน สวยงาม
            ============================================================ */
         .listing-card, .property-card, .stat-card {{
             background-color: #FFFFFF !important;
@@ -83,29 +81,46 @@ def apply_custom_style():
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             border: 1px solid #E0E0E0;
             padding: 20px;
-
-            /* 1. เพิ่มความสูงขั้นต่ำให้มากขึ้น (เพราะมีรูปโลโก้จังหวัด) */
-            /* ถ้ายังมีบางใบยาวกว่าเพื่อน ให้เพิ่มเลขนี้เป็น 350px หรือ 380px */
+            
+            /* บนคอมฯ บังคับสูงเท่ากัน */
             min-height: 340px; 
             
-            /* 2. จัดระเบียบภายในให้ยืดหยุ่น */
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* ดันหัวกับท้ายแยกจากกัน */
+            justify-content: space-between;
         }}
 
-        /* 3. บังคับให้ส่วน 'ราคา' (div ตัวสุดท้าย) ดันตัวเองไปติดขอบล่างเสมอ */
+        /* ดันราคาไปล่างสุด (เฉพาะบนคอม) */
         .property-card > div:last-child, .listing-card .card-body > div:last-child {{
              margin-top: auto !important; 
              padding-top: 15px;
         }}
 
-        /* สีตัวหนังสือ */
+        /* ============================================================
+           📱 Mobile Fix: แก้ปัญหาช่องว่างเยอะเกินบนมือถือ
+           ============================================================ */
+        @media only screen and (max-width: 768px) {{
+            .listing-card, .property-card, .stat-card {{
+                min-height: auto !important; /* ยกเลิกการบังคับความสูง */
+                height: auto !important;     /* ให้สูงตามเนื้อหาจริง */
+                padding: 15px !important;    /* ลดขอบลงนิดหน่อยเพื่อประหยัดที่ */
+                margin-bottom: 15px;         /* เว้นระยะห่างระหว่างการ์ด */
+                display: block !important;   /* ยกเลิก Flex เพื่อให้เรียงตามปกติ */
+            }}
+            
+            /* ยกเลิกการดันราคาไปล่างสุด ให้มันต่อจากเนื้อหาเลย */
+            .property-card > div:last-child {{
+                margin-top: 10px !important;
+                padding-top: 10px !important;
+                border-top: 1px dashed #eee; /* เพิ่มเส้นประคั่นสวยๆ แทน */
+            }}
+        }}
+
+        /* --- สีตัวหนังสือ --- */
         .listing-card div, .property-card div, .stat-card div {{
             color: #31333F; 
         }}
 
-        /* สียกเว้น */
         .card-price, div[style*="color:#2ECC71"] {{
             color: #2ECC71 !important;
         }}
