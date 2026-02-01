@@ -116,7 +116,7 @@ with col_list:
                 <div style="margin-top:8px; font-weight:bold; color:#2ECC71; font-size:22px;">฿{row['Est_Land_Price']:,.0f}</div>
             </div>""", unsafe_allow_html=True)
 
-# --- 5. Price Breakdown Section (Dashboard Style Design) ---
+# --- 5. Price Breakdown Section (Clean Dashboard Layout) ---
 st.markdown("---")
 st.subheader("🧮 แกะสูตรคำนวณราคา (Price Breakdown)")
 st.info("เลือกตำบลด้านล่าง เพื่อดูว่าทฤษฎีแต่ละตัวส่งผลต่อราคาอย่างไร")
@@ -133,14 +133,16 @@ if not df_display.empty:
         central_fac = row['Factor_Centrality']
         final_price = row['Est_Land_Price']
         
-        # ✅ Dashboard Style HTML: แบ่ง 4 การ์ด สีพาสเทล + ไอคอน
+        # ✅ Dashboard Layout: ไม่มีเครื่องหมายคูณหาร เรียงเป็น Grid สวยงาม
         html_code = f"""
         <style>
             .metric-container {{
-                display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 25px;
+                display: grid; 
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Responsive Grid */
+                gap: 20px; 
+                margin-bottom: 25px;
             }}
             .metric-card {{
-                flex: 1; min-width: 220px;
                 background-color: white;
                 border-radius: 12px;
                 padding: 20px;
