@@ -11,7 +11,6 @@ def get_base64_of_bin_file(bin_file):
     return base64.b64encode(data).decode()
 
 def find_logo_file():
-    """ค้นหาไฟล์โลโก้ (รองรับหลายนามสกุล)"""
     candidates = ["logonobackground.png", "logo.png", "logo.jpg", "logo.jpeg"]
     for filename in candidates:
         if os.path.exists(filename):
@@ -50,7 +49,6 @@ def apply_custom_style():
             background: linear-gradient(180deg, #1A365D 0%, #142847 100%);
         }}
 
-        /* จัดการส่วนเมนู Navigation */
         div[data-testid="stSidebarNav"] {{
             {logo_css}
         }}
@@ -62,10 +60,8 @@ def apply_custom_style():
             margin: 0 auto;
         }}
 
-        /* สีตัวหนังสือใน Sidebar */
         [data-testid="stSidebar"] * {{ color: white !important; }}
 
-        /* แก้สี Dropdown ใน Sidebar */
         [data-testid="stSidebar"] div[data-baseweb="select"] > div {{
             color: var(--text-color) !important;
             background-color: var(--background-color) !important;
@@ -79,41 +75,41 @@ def apply_custom_style():
         }}
         
         /* ============================================================
-           ✅ ส่วนที่แก้ไข: บังคับการ์ดให้สูงเท่ากันและจัดระเบียบภายใน
+           ✅ ส่วนที่แก้ไข: ปรับความสูงการ์ดให้เท่ากัน (Equal Height)
            ============================================================ */
         .listing-card, .property-card, .stat-card {{
             background-color: #FFFFFF !important;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             border: 1px solid #E0E0E0;
-            padding: 25px;
+            padding: 20px;
 
-            /* 1. ตั้งค่าความสูงขั้นต่ำ (แก้เลขนี้ถ้าต้องการให้สูง/เตี้ยลง) */
-            min-height: 180px; 
+            /* 1. เพิ่มความสูงขั้นต่ำให้มากขึ้น (เพราะมีรูปโลโก้จังหวัด) */
+            /* ถ้ายังมีบางใบยาวกว่าเพื่อน ให้เพิ่มเลขนี้เป็น 350px หรือ 380px */
+            min-height: 340px; 
             
-            /* 2. ใช้ Flexbox จัดระเบียบแนวตั้ง */
+            /* 2. จัดระเบียบภายในให้ยืดหยุ่น */
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* ดันเนื้อหาหัว-ท้ายแยกกัน */
+            justify-content: space-between; /* ดันหัวกับท้ายแยกจากกัน */
         }}
 
-        /* เทคนิคพิเศษ: ดัน div ตัวสุดท้าย (ส่วนราคา) ไปชิดขอบล่างเสมอ */
+        /* 3. บังคับให้ส่วน 'ราคา' (div ตัวสุดท้าย) ดันตัวเองไปติดขอบล่างเสมอ */
         .property-card > div:last-child, .listing-card .card-body > div:last-child {{
-             margin-top: auto !important; /* เขียนทับ inline style เดิมใน home.py */
-             padding-top: 15px;          /* เพิ่มช่องว่างเหนือราคา */
+             margin-top: auto !important; 
+             padding-top: 15px;
         }}
 
-        /* บังคับตัวหนังสือข้างในให้เป็นสีเข้ม */
+        /* สีตัวหนังสือ */
         .listing-card div, .property-card div, .stat-card div {{
             color: #31333F; 
         }}
 
-        /* ยกเว้น: ราคาให้เป็นสีเขียว */
+        /* สียกเว้น */
         .card-price, div[style*="color:#2ECC71"] {{
             color: #2ECC71 !important;
         }}
         
-        /* ยกเว้น: ป้ายคะแนน */
         div[style*="background:#1A365D"] {{
             color: #FFFFFF !important;
         }}
