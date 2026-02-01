@@ -74,7 +74,33 @@ selected_amphoe = st.sidebar.selectbox("🏙️ อำเภอ/เขต", amph
 st.sidebar.caption("© 2024 SongTumLay Pro")
 
 # --- 4. Main Content ---
-st.title(f"วิเคราะห์ทำเล: {selected_prov if selected_prov!='ทั้งหมด' else 'ภาพรวม'}")
+
+# ❌ ลบ Title เก่าทิ้ง
+# st.title(f"วิเคราะห์ทำเล: ...")
+
+# ✅ ใส่ Header ใหม่แบบรูปภาพ (Banner Style)
+subtitle_text = f"พื้นที่: {selected_prov}" if selected_prov != 'ทั้งหมด' else "ภาพรวมประเทศไทย"
+
+st.markdown(f"""
+<div style="
+    background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2613&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    padding: 50px 20px;
+    border-radius: 12px;
+    text-align: center;
+    margin-bottom: 25px;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+">
+    <div style="font-size: 48px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">
+        แผนที่วิเคราะห์ทำเล
+    </div>
+    <div style="font-size: 18px; font-weight: 300; opacity: 0.9;">
+        {subtitle_text}
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 df_display = df_view.copy()
 if selected_prov != "ทั้งหมด": df_display = df_display[df_display['Province'] == selected_prov]
@@ -83,7 +109,9 @@ if selected_amphoe != "ทั้งหมด": df_display = df_display[df_displa
 col_map, col_list = st.columns([2, 1.2])
 
 with col_map:
-    st.subheader(f"🗺️ แผนที่ราคา ({latest_year_str})")
+    # ❌ ลบ Subheader "แผนที่ราคา (2566)" ออกตามคำขอ
+    # st.subheader(f"🗺️ แผนที่ราคา ({latest_year_str})")
+    
     center = [13.7563, 100.5018]
     zoom = 6
     if not df_display.empty:
@@ -173,69 +201,52 @@ if not df_display.empty:
         """
         st.markdown(html_code, unsafe_allow_html=True)
         
-        # 2. Factor Analysis (Middle - Full Width)
+        # 2. Factor Analysis
         st.subheader("📊 วิเคราะห์ปัจจัย (Factors Analysis)")
         f1, f2 = st.columns(2)
         with f1:
             if density_fac > 1.0:
-                st.success(f"📈 **Population Density (+):** พื้นที่นี้มีประชากรหนาแน่นกว่าค่าเฉลี่ย ({density_fac:.2f} เท่า) ส่งผลให้ราคาที่ดินมีแนวโน้มสูงขึ้น")
+                st.success(f"📈 **Population Density (+):** ประชากรหนาแน่นกว่าค่าเฉลี่ย ({density_fac:.2f} เท่า)")
             else:
-                st.warning(f"📉 **Population Density (-):** พื้นที่นี้มีความหนาแน่นประชากรน้อยกว่าค่าเฉลี่ย ({density_fac:.2f} เท่า) อาจเป็นพื้นที่อยู่อาศัยที่เงียบสงบ")
+                st.warning(f"📉 **Population Density (-):** ประชากรน้อยกว่าค่าเฉลี่ย ({density_fac:.2f} เท่า)")
         with f2:
             if central_fac > 1.0:
-                st.info(f"🏙️ **Central Place Effect:** ตำบลนี้ตั้งอยู่ในเขตอำเภอเมืองหรือศูนย์กลางเศรษฐกิจ มีสิ่งอำนวยความสะดวกครบครัน ทำให้ราคาสูงขึ้น")
+                st.info(f"🏙️ **Central Place Effect:** อยู่ในเขตอำเภอเมือง/ศูนย์กลาง")
             else:
                 st.markdown(f"""<div style="padding:10px; border-radius:5px; background-color:#F0F2F6; color:#31333F;">
-                🏡 <b>Central Place Effect:</b> เป็นพื้นที่รอบนอกหรือชานเมือง เหมาะสำหรับการอยู่อาศัยที่ไม่พลุกพล่าน ราคายังเข้าถึงง่าย
-                </div>""", unsafe_allow_html=True)
+                🏡 <b>Central Place Effect:</b> เป็นพื้นที่รอบนอก</div>""", unsafe_allow_html=True)
         
-        st.write("") # Spacer
+        st.write("")
 
-        # 3. Graph (Bottom - Full Width & Enhanced)
+        # 3. Graph
         st.subheader("📈 เปรียบเทียบราคาและวิเคราะห์เชิงลึก (Price Comparison)")
-        
-        # คำนวณค่าเฉลี่ยของจังหวัด/พื้นที่ที่เลือกมา (เพื่อใช้เทียบ)
         avg_area_price = df_display['Est_Land_Price'].mean()
-        
         pct_change = ((final_price - base_price) / base_price) * 100
         change_color = "#2ECC71" if pct_change >= 0 else "#E74C3C"
         change_arrow = "▲" if pct_change >= 0 else "▼"
 
         fig = go.Figure()
 
-        # แท่งที่ 1: ราคาพื้นฐาน
         fig.add_trace(go.Bar(
-            x=['ราคาพื้นฐาน'], y=[base_price],
-            name='ราคาพื้นฐาน',
+            x=['ราคาพื้นฐาน'], y=[base_price], name='ราคาพื้นฐาน',
             marker=dict(color=base_price, colorscale=[[0, '#CFD8DC'], [1, '#90A4AE']]),
-            text=[f"฿{base_price:,.0f}"], textposition='auto',
-            width=0.4
+            text=[f"฿{base_price:,.0f}"], textposition='auto', width=0.4
         ))
 
-        # แท่งที่ 2: ราคาประเมิน AI
         fig.add_trace(go.Bar(
-            x=['ราคาประเมิน AI'], y=[final_price],
-            name='ราคาประเมิน AI',
+            x=['ราคาประเมิน AI'], y=[final_price], name='ราคาประเมิน AI',
             marker=dict(color=final_price, colorscale=[[0, '#A5D6A7'], [1, '#4CAF50']]),
-            text=[f"฿{final_price:,.0f}"], textposition='auto',
-            width=0.4
+            text=[f"฿{final_price:,.0f}"], textposition='auto', width=0.4
         ))
         
-        # เพิ่มเส้นค่าเฉลี่ย (Average Line)
-        fig.add_shape(
-            type="line",
-            x0=-0.5, x1=1.5,
-            y0=avg_area_price, y1=avg_area_price,
+        fig.add_shape(type="line", x0=-0.5, x1=1.5, y0=avg_area_price, y1=avg_area_price,
             line=dict(color="#FF5722", width=2, dash="dash"),
         )
         fig.add_annotation(
-            x=1.5, y=avg_area_price,
-            text=f"ค่าเฉลี่ยในพื้นที่: ฿{avg_area_price:,.0f}",
-            showarrow=False, yshift=10, xanchor="right",
-            font=dict(color="#FF5722", size=12)
+            x=1.5, y=avg_area_price, text=f"ค่าเฉลี่ย: ฿{avg_area_price:,.0f}",
+            showarrow=False, yshift=10, xanchor="right", font=dict(color="#FF5722", size=12)
         )
 
-        # Annotation: เปอร์เซ็นต์การเปลี่ยนแปลง
         fig.add_annotation(
             x=0.5, y=max(base_price, final_price) * 1.05,
             text=f"{change_arrow} {pct_change:+.1f}% Impact",
@@ -245,15 +256,10 @@ if not df_display.empty:
         )
 
         fig.update_layout(
-            title="เปรียบเทียบราคา vs ปัจจัยผลกระทบ",
-            height=500, # ✅ ทำให้กราฟสูงขึ้นตามขอ
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
+            title="เปรียบเทียบราคา vs ปัจจัยผลกระทบ", height=500,
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             font=dict(family="Sarabun", size=14, color=st.get_option("theme.textColor")),
-            yaxis=dict(showgrid=True, gridcolor='#eee'),
-            xaxis=dict(showgrid=False),
-            bargap=0.2,
-            showlegend=False
+            yaxis=dict(showgrid=True, gridcolor='#eee'), xaxis=dict(showgrid=False),
+            bargap=0.2, showlegend=False
         )
-        
         st.plotly_chart(fig, use_container_width=True)
