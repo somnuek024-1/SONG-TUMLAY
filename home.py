@@ -116,7 +116,7 @@ with col_list:
                 <div style="margin-top:8px; font-weight:bold; color:#2ECC71; font-size:22px;">฿{row['Est_Land_Price']:,.0f}</div>
             </div>""", unsafe_allow_html=True)
 
-# --- 5. Price Breakdown Section (New Design) ---
+# --- 5. Price Breakdown Section (แก้ Indentation แล้ว) ---
 st.markdown("---")
 st.subheader("🧮 แกะสูตรคำนวณราคา (Price Breakdown)")
 st.info("เลือกตำบลด้านล่าง เพื่อดูว่าทฤษฎีแต่ละตัวส่งผลต่อราคาอย่างไร")
@@ -133,42 +133,27 @@ if not df_display.empty:
         central_fac = row['Factor_Centrality']
         final_price = row['Est_Land_Price']
         
-        # ✅ NEW DESIGN: Modern Card Layout (HTML)
-        # ใช้ Flexbox เพื่อให้การ์ดเรียงตัวสวยงาม และใส่เงา/สีสันให้น่าสนใจ
+        # ✅ แก้ไข Syntax: จัด Indentation ของ html_code ให้ถูกต้อง 100%
         html_code = f"""
-        <div style="background-color:white; padding:25px; border-radius:15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 25px;">
-            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:15px;">
-                
-                <div style="background:#F8F9FA; padding:15px 20px; border-radius:12px; text-align:center; min-width:140px; border-top: 5px solid #2C3E50; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                    <div style="font-size:20px; margin-bottom:5px;">🏷️</div>
-                    <div style="font-size:22px; font-weight:900; color:#2C3E50;">{base_price:,.0f}</div>
-                    <div style="font-size:12px; color:#666; font-weight:bold;">ราคาพื้นฐาน</div>
-                </div>
-
-                <div style="font-size:20px; color:#BDC3C7; font-weight:bold;">✕</div>
-
-                <div style="background:#FFF8E1; padding:15px 20px; border-radius:12px; text-align:center; min-width:140px; border-top: 5px solid #D35400; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                    <div style="font-size:20px; margin-bottom:5px;">👥</div>
-                    <div style="font-size:22px; font-weight:900; color:#D35400;">{density_fac:.2f}</div>
-                    <div style="font-size:12px; color:#666; font-weight:bold;">Factor ความหนาแน่น</div>
-                </div>
-
-                <div style="font-size:20px; color:#BDC3C7; font-weight:bold;">✕</div>
-
-                <div style="background:#EBF5FB; padding:15px 20px; border-radius:12px; text-align:center; min-width:140px; border-top: 5px solid #2980B9; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                    <div style="font-size:20px; margin-bottom:5px;">🏙️</div>
-                    <div style="font-size:22px; font-weight:900; color:#2980B9;">{central_fac:.1f}</div>
-                    <div style="font-size:12px; color:#666; font-weight:bold;">Factor ทำเล</div>
-                </div>
-
-                <div style="font-size:20px; color:#BDC3C7; font-weight:bold;">=</div>
-
-                <div style="background:#E8F8F5; padding:15px 25px; border-radius:12px; text-align:center; min-width:160px; border: 2px solid #27AE60; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.15);">
-                    <div style="font-size:20px; margin-bottom:5px;">🏆</div>
-                    <div style="font-size:26px; font-weight:900; color:#27AE60;">{final_price:,.0f}</div>
-                    <div style="font-size:12px; color:#27AE60; font-weight:bold;">ราคาประเมิน AI</div>
-                </div>
-
+        <div style="background-color:#FFFFFF; border:2px solid #E0E0E0; border-radius:12px; padding:20px; text-align:center; margin-bottom:20px; color:#333333; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <div style="display:inline-block; margin:0 15px;">
+                <div style="font-size:26px; font-weight:900; color:#2C3E50;">{base_price:,.0f}</div>
+                <div style="font-size:14px; font-weight:bold; color:#555555;">ราคาพื้นฐาน</div>
+            </div>
+            <span style="font-size:24px; font-weight:900; color:#BDC3C7;">×</span>
+            <div style="display:inline-block; margin:0 15px;">
+                <div style="font-size:26px; font-weight:900; color:#D35400;">{density_fac:.2f}</div>
+                <div style="font-size:14px; font-weight:bold; color:#555555;">ปัจจัยความหนาแน่น</div>
+            </div>
+            <span style="font-size:24px; font-weight:900; color:#BDC3C7;">×</span>
+            <div style="display:inline-block; margin:0 15px;">
+                <div style="font-size:26px; font-weight:900; color:#2980B9;">{central_fac:.1f}</div>
+                <div style="font-size:14px; font-weight:bold; color:#555555;">ปัจจัยความเป็นเมือง</div>
+            </div>
+            <span style="font-size:24px; font-weight:900; color:#27AE60;">=</span>
+            <div style="display:inline-block; margin:0 15px;">
+                <div style="font-size:28px; font-weight:900; color:#27AE60;">{final_price:,.0f}</div>
+                <div style="font-size:14px; font-weight:bold; color:#555555;">ราคาประเมิน AI</div>
             </div>
         </div>
         """
