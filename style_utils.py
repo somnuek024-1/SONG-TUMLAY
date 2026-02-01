@@ -58,48 +58,27 @@ def apply_custom_style():
         [data-testid="stSidebar"] div[data-baseweb="select"] svg {{ fill: var(--text-color) !important; }}
 
         /* ============================================================
-           🖥️ DEFAULT STYLE (Desktop / จอใหญ่)
+           ✅ UNIFIED COMPACT STYLE (ใช้สไตล์แบบกระชับกับทุกหน้าจอ)
            ============================================================ */
         .listing-card, .property-card, .stat-card {{
             background-color: #FFFFFF !important;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             border: 1px solid #E0E0E0;
-            padding: 20px;
             
-            /* ✅ ความสูงบนคอมฯ */
-            min-height: 340px; 
-            
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            /* ✅ ตั้งค่าให้สูงพอดีเนื้อหา (Compact) */
+            min-height: unset !important;
+            height: auto !important;
+            display: block !important;
+            padding: 15px !important;
+            margin-bottom: 15px !important; /* เว้นระยะห่างระหว่างการ์ด */
         }}
 
-        /* ดันราคาไปล่างสุด (เฉพาะบนคอม) */
+        /* ส่วนแสดงราคา: ให้ต่อท้ายเนื้อหาเลย ไม่ต้องดันไปล่างสุด */
         .property-card > div:last-child, .listing-card .card-body > div:last-child {{
-             margin-top: auto; 
-             padding-top: 15px;
-        }}
-
-        /* ============================================================
-           📱 MOBILE OVERRIDE (บังคับแก้เฉพาะมือถือ)
-           ============================================================ */
-        @media only screen and (max-width: 900px) {{
-            /* 1. ยกเลิกความสูงขั้นต่ำทิ้งทั้งหมด */
-            .listing-card, .property-card, .stat-card {{
-                min-height: unset !important;   /* ยกเลิกค่า 340px */
-                height: auto !important;        /* ให้สูงเท่าเนื้อหาจริง */
-                display: block !important;      /* ยกเลิก Flexbox */
-                padding: 15px !important;
-                margin-bottom: 12px !important;
-            }}
-
-            /* 2. ดึงราคาขึ้นมาต่อท้ายเนื้อหาทันที */
-            .property-card > div:last-child, .listing-card .card-body > div:last-child {{
-                margin-top: 10px !important;    /* เว้นห่างนิดเดียวพอ */
-                padding-top: 10px !important;
-                border-top: 1px dashed #eee;    /* เส้นประคั่นบางๆ */
-            }}
+             margin-top: 10px !important; 
+             padding-top: 10px !important;
+             border-top: 1px dashed #eee; /* เส้นคั่นบางๆ สวยงาม */
         }}
 
         /* --- Colors --- */
