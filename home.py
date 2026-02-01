@@ -116,3 +116,73 @@ with col_list:
                 <div style="font-size:12px; opacity:0.7;">📍 {row['Amphoe']}, {row['Province']}</div>
                 <div style="margin-top:5px; font-weight:bold; color:#2ECC71; font-size:16px;">฿{row['Est_Land_Price']:,.0f}</div>
             </div>""", unsafe_allow_html=True)
+
+# --- 🚀 ส่วนที่กู้คืนกลับมา (Price Breakdown) ---
+st.markdown("---")
+st.subheader("🧮 แกะสูตรคำนวณราคา (Price Breakdown)")
+st.info("เลือกตำบลด้านล่าง เพื่อดูว่าทฤษฎีแต่ละตัวส่งผลต่อราคาอย่างไร")
+
+if not df_display.empty:
+    tambon_opts = df_display['Tambon'].unique()
+    target_tambon = st.selectbox("🔍 เลือกตำบลเพื่อถอดสูตร", tambon_opts)
+    
+    if target_tambon:
+        row = df_display[df_display['Tambon'] == target_tambon].iloc[0]
+        
+        base_price = row['Avg_Land_Price']
+        density_fac = row['Factor_Density']
+        central_fac = row['Factor_Centrality']
+        final_price = row['Est_Land_Price']
+        
+        # HTML แสดงสูตรคำนวณสวยๆ
+        st.markdown(f"""
+        <div style="background-color:var(--secondary-background-color); border:1px dashed #4CAF50; border-radius:10px; padding:20px; text-align:center; margin-bottom:20px;">
+            <div style="display:inline-block; margin:0 15px;">
+                <div style="font-size:24px; font-weight:bold;">{base_price:,.0f}</div>
+                <div style="font-size:12px; opacity:0.7;">ราคาพื้นฐาน</div>
+            </div>
+            <span style="font-size:20px; color:#4CAF50;">×</span>
+            <div style="display:inline-block; margin:0 15px;">
+                <div style="font-size:24px; font-weight:bold; color:#F39C12;">{density_fac:.2f}</div>
+                <div style="font-size:12px; opacity:0.7;">ปัจจัยความหนาแน่น</div>
+            </div>
+            <span style="font-size:20px; color:#4CAF50;">×</span>
+            <div style="display:inline-block; margin:0 15px;">
+                <div style="font-size:24px; font-weight:bold; color:#3498DB;">{central_fac:.1f}</div>
+                <div style="font-size:12px; opacity:0.7;">ปัจจัยความเป็นเมือง</div>
+            </div>
+            <span style="font-size:20px; color:#4CAF50;">=</span>
+            <div style="display:inline-block; margin:0 15px;">
+                <div style="font-size:24px; font-weight:bold; color:#2ECC71;">{final_price:,.0f}</div>
+                <div style="font-size:12px; opacity:0.7;">ราคาประเมิน AI</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("### 📊 วิเคราะห์ปัจจัย (Factors)")
+            if density_fac > 1.0:
+                st.success(f"📈 **Population Density (+):** ประชากรหนาแน่นกว่าค่าเฉลี่ย ({density_fac:.2f} เท่า)")
+            else:
+                st.warning(f"📉 **Population Density (-):** ประชากรน้อยกว่าค่าเฉลี่ย ({density_fac:.2f} เท่า)")
+                
+            if central_fac > 1.0:
+                st.info(f"🏙️ **Central Place Effect:** อยู่ในเขตอำเภอเมือง/ศูนย์กลาง")
+            else:
+                st.markdown(f"🏡 **Central Place Effect:** เป็นพื้นที่รอบนอก")
+
+        with c2:
+            st.markdown("### 📈 เทียบราคา")
+            comp_data = pd.DataFrame({
+                'Type': ['ราคาพื้นฐาน', 'ราคาประเมิน AI'],
+                'Price': [base_price, final_price]
+            })
+            fig = px.bar(comp_data, x='Type', y='Price', color='Type', 
+                         color_discrete_map={'ราคาพื้นฐาน':'#A0AEC0', 'ราคาประเมิน AI':'#2ECC71'},
+                         text_auto='.2s')
+            fig.update_layout(showlegend=False, height=250, 
+                              paper_bgcolor='rgba(0,0,0,0)', 
+                              plot_bgcolor='rgba(0,0,0,0)',
+                              margin=dict(l=20, r=20, t=20, b=20))
+            st.plotly_chart(fig, use_container_width=True)
