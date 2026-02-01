@@ -7,11 +7,11 @@ import numpy as np
 import plotly.express as px
 from style_utils import apply_custom_style  # ✅ เรียกใช้ไฟล์กลาง
 
-# --- Config ---
+# --- 1. Config ---
 st.set_page_config(page_title="SONGTUMLAY Pro", layout="wide", page_icon="🏙️")
 apply_custom_style() # ✅ ใช้งาน Theme
 
-# --- Helper Functions ---
+# --- 2. Helper Functions & Data ---
 def get_coordinates(province_name):
     coords = {
         "เชียงใหม่": [18.7883, 98.9853], "ขอนแก่น": [16.4322, 102.8236], "ภูเก็ต": [7.8804, 98.3923], 
@@ -62,7 +62,7 @@ else:
     df_view = pd.DataFrame()
     latest_year_str = "N/A"
 
-# --- Sidebar Inputs ---
+# --- 3. Sidebar Inputs ---
 st.sidebar.markdown("### 🔍 ค้นหาพื้นที่")
 provinces = ["ทั้งหมด"] + sorted(list(df_all_years['Province'].unique())) if not df_all_years.empty else []
 selected_prov = st.sidebar.selectbox("📍 จังหวัด", provinces)
@@ -70,10 +70,9 @@ amphoes = ["ทั้งหมด"]
 if selected_prov != "ทั้งหมด":
     amphoes += sorted(df_all_years[df_all_years['Province'] == selected_prov]['Amphoe'].unique())
 selected_amphoe = st.sidebar.selectbox("🏙️ อำเภอ/เขต", amphoes)
-st.sidebar.markdown('<hr class="sidebar-divider">', unsafe_allow_html=True)
 st.sidebar.caption("© 2024 SongTumLay Pro")
 
-# --- Main Content ---
+# --- 4. Main Content ---
 st.title(f"วิเคราะห์ทำเล: {selected_prov if selected_prov!='ทั้งหมด' else 'ภาพรวม'}")
 
 df_display = df_view.copy()
@@ -102,27 +101,23 @@ with col_map:
                 ).add_to(mc)
     st_folium(m, height=500, use_container_width=True)
 
-# ... (โค้ดส่วนบนเหมือนเดิม) ...
-
 with col_list:
     st.subheader("🏆 รายการ (Top 5)")
     if not df_display.empty:
         top_list = df_display.sort_values('Total_Score', ascending=False).head(5)
         for _, row in top_list.iterrows():
+            # ✅ ปรับแต่ง HTML ตรงนี้ให้ตัวหนังสือใหญ่ขึ้นและสวยงาม
             st.markdown(f"""
             <div class="property-card">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="font-weight:bold; font-size:20px;">{row['Tambon']}</div>
-                    
                     <div style="background:#1A365D; color:white; padding:4px 10px; border-radius:10px; font-size:14px; font-weight:bold;">{row['Total_Score']}</div>
                 </div>
-                
                 <div style="font-size:14px; opacity:0.8; margin-top:5px;">📍 {row['Amphoe']}, {row['Province']}</div>
-                
                 <div style="margin-top:8px; font-weight:bold; color:#2ECC71; font-size:22px;">฿{row['Est_Land_Price']:,.0f}</div>
             </div>""", unsafe_allow_html=True)
 
-# --- 🚀 ส่วนที่กู้คืนกลับมา (Price Breakdown) ---
+# --- 5. Price Breakdown Section (กู้คืนกลับมาแล้ว) ---
 st.markdown("---")
 st.subheader("🧮 แกะสูตรคำนวณราคา (Price Breakdown)")
 st.info("เลือกตำบลด้านล่าง เพื่อดูว่าทฤษฎีแต่ละตัวส่งผลต่อราคาอย่างไร")
@@ -191,4 +186,3 @@ if not df_display.empty:
                               plot_bgcolor='rgba(0,0,0,0)',
                               margin=dict(l=20, r=20, t=20, b=20))
             st.plotly_chart(fig, use_container_width=True)
-
