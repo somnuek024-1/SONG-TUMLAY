@@ -116,7 +116,7 @@ with col_list:
                 <div style="margin-top:8px; font-weight:bold; color:#2ECC71; font-size:22px;">฿{row['Est_Land_Price']:,.0f}</div>
             </div>""", unsafe_allow_html=True)
 
-# --- 5. Price Breakdown Section (Clean Dashboard Layout) ---
+# --- 5. Price Breakdown Section (New Design) ---
 st.markdown("---")
 st.subheader("🧮 แกะสูตรคำนวณราคา (Price Breakdown)")
 st.info("เลือกตำบลด้านล่าง เพื่อดูว่าทฤษฎีแต่ละตัวส่งผลต่อราคาอย่างไร")
@@ -133,65 +133,45 @@ if not df_display.empty:
         central_fac = row['Factor_Centrality']
         final_price = row['Est_Land_Price']
         
-        # ✅ Dashboard Layout: ไม่มีเครื่องหมายคูณหาร เรียงเป็น Grid สวยงาม
-        # ใช้ triple quotes และเขียนชิดซ้ายเพื่อป้องกัน Syntax Error
+        # ✅ NEW DESIGN: Modern Card Layout (HTML)
+        # ใช้ Flexbox เพื่อให้การ์ดเรียงตัวสวยงาม และใส่เงา/สีสันให้น่าสนใจ
         html_code = f"""
-<style>
-    .metric-container {{
-        display: grid; 
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
-        gap: 20px; 
-        margin-bottom: 25px;
-    }}
-    .metric-card {{
-        background-color: white;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        position: relative;
-        overflow: hidden;
-        border: 1px solid rgba(0,0,0,0.05);
-    }}
-    .card-title {{ font-size: 16px; font-weight: bold; color: #555; margin-bottom: 10px; }}
-    .card-value {{ font-size: 28px; font-weight: 900; color: #333; }}
-    .card-icon {{ 
-        position: absolute; top: 15px; right: 15px; font-size: 40px; opacity: 0.2; 
-    }}
-    .card-footer {{ 
-        margin-top: 15px; font-size: 13px; font-weight: bold; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1); 
-    }}
-</style>
+        <div style="background-color:white; padding:25px; border-radius:15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 25px;">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:15px;">
+                
+                <div style="background:#F8F9FA; padding:15px 20px; border-radius:12px; text-align:center; min-width:140px; border-top: 5px solid #2C3E50; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <div style="font-size:20px; margin-bottom:5px;">🏷️</div>
+                    <div style="font-size:22px; font-weight:900; color:#2C3E50;">{base_price:,.0f}</div>
+                    <div style="font-size:12px; color:#666; font-weight:bold;">ราคาพื้นฐาน</div>
+                </div>
 
-<div class="metric-container">
-    <div class="metric-card" style="background: #E3F2FD;">
-        <div class="card-title">ราคาตั้งต้น (Base)</div>
-        <div class="card-value" style="color:#1565C0;">฿{base_price:,.0f}</div>
-        <div class="card-icon">🏷️</div>
-        <div class="card-footer" style="color:#1565C0;">ราคาประเมินกรมที่ดิน</div>
-    </div>
+                <div style="font-size:20px; color:#BDC3C7; font-weight:bold;">✕</div>
 
-    <div class="metric-card" style="background: #FFF3E0;">
-        <div class="card-title">Density Factor</div>
-        <div class="card-value" style="color:#E65100;">x {density_fac:.2f}</div>
-        <div class="card-icon">👥</div>
-        <div class="card-footer" style="color:#E65100;">ปรับตามความหนาแน่น</div>
-    </div>
+                <div style="background:#FFF8E1; padding:15px 20px; border-radius:12px; text-align:center; min-width:140px; border-top: 5px solid #D35400; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <div style="font-size:20px; margin-bottom:5px;">👥</div>
+                    <div style="font-size:22px; font-weight:900; color:#D35400;">{density_fac:.2f}</div>
+                    <div style="font-size:12px; color:#666; font-weight:bold;">Factor ความหนาแน่น</div>
+                </div>
 
-    <div class="metric-card" style="background: #F3E5F5;">
-        <div class="card-title">Location Factor</div>
-        <div class="card-value" style="color:#7B1FA2;">x {central_fac:.1f}</div>
-        <div class="card-icon">🏙️</div>
-        <div class="card-footer" style="color:#7B1FA2;">ปรับตามโซนเมือง</div>
-    </div>
+                <div style="font-size:20px; color:#BDC3C7; font-weight:bold;">✕</div>
 
-    <div class="metric-card" style="background: #E8F5E9; border: 2px solid #4CAF50;">
-        <div class="card-title">ราคาประเมิน AI</div>
-        <div class="card-value" style="color:#2E7D32;">฿{final_price:,.0f}</div>
-        <div class="card-icon" style="opacity:1;">💰</div>
-        <div class="card-footer" style="color:#2E7D32;">สรุปราคาขายจริง</div>
-    </div>
-</div>
-"""
+                <div style="background:#EBF5FB; padding:15px 20px; border-radius:12px; text-align:center; min-width:140px; border-top: 5px solid #2980B9; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <div style="font-size:20px; margin-bottom:5px;">🏙️</div>
+                    <div style="font-size:22px; font-weight:900; color:#2980B9;">{central_fac:.1f}</div>
+                    <div style="font-size:12px; color:#666; font-weight:bold;">Factor ทำเล</div>
+                </div>
+
+                <div style="font-size:20px; color:#BDC3C7; font-weight:bold;">=</div>
+
+                <div style="background:#E8F8F5; padding:15px 25px; border-radius:12px; text-align:center; min-width:160px; border: 2px solid #27AE60; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.15);">
+                    <div style="font-size:20px; margin-bottom:5px;">🏆</div>
+                    <div style="font-size:26px; font-weight:900; color:#27AE60;">{final_price:,.0f}</div>
+                    <div style="font-size:12px; color:#27AE60; font-weight:bold;">ราคาประเมิน AI</div>
+                </div>
+
+            </div>
+        </div>
+        """
         st.markdown(html_code, unsafe_allow_html=True)
         
         c1, c2 = st.columns(2)
@@ -214,7 +194,7 @@ if not df_display.empty:
                 'Price': [base_price, final_price]
             })
             fig = px.bar(comp_data, x='Type', y='Price', color='Type', 
-                         color_discrete_map={'ราคาพื้นฐาน':'#90A4AE', 'ราคาประเมิน AI':'#4CAF50'},
+                         color_discrete_map={'ราคาพื้นฐาน':'#95A5A6', 'ราคาประเมิน AI':'#27AE60'},
                          text_auto='.2s')
             
             fig.update_layout(showlegend=False, height=250, 
