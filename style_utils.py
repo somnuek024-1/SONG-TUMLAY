@@ -18,9 +18,6 @@ def find_logo_file():
     return None
 
 def apply_custom_style():
-    """ฟังก์ชันหลักสำหรับฝัง CSS"""
-    
-    # 1. เตรียมรูปโลโก้
     target_file = find_logo_file()
     logo_css = ""
     
@@ -34,7 +31,6 @@ def apply_custom_style():
             padding-top: 260px !important; 
         """
 
-    # 2. ฝัง CSS ทั้งหมด
     st.markdown(f"""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
@@ -44,38 +40,25 @@ def apply_custom_style():
             color: var(--text-color);
         }}
 
-        /* --- Sidebar Styling --- */
+        /* --- Sidebar --- */
         [data-testid="stSidebar"] > div:first-child {{
             background: linear-gradient(180deg, #1A365D 0%, #142847 100%);
         }}
-
-        div[data-testid="stSidebarNav"] {{
-            {logo_css}
-        }}
-
+        div[data-testid="stSidebarNav"] {{ {logo_css} }}
         div[data-testid="stSidebarNav"] > ul {{
-            transform: scale(1.08);
-            transform-origin: top center;
-            width: 95% !important;
-            margin: 0 auto;
+            transform: scale(1.08); transform-origin: top center; width: 95% !important; margin: 0 auto;
         }}
-
         [data-testid="stSidebar"] * {{ color: white !important; }}
-
+        .sidebar-divider {{ margin: 15px 0; border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); }}
+        
+        /* แก้สี Dropdown */
         [data-testid="stSidebar"] div[data-baseweb="select"] > div {{
-            color: var(--text-color) !important;
-            background-color: var(--background-color) !important;
+            color: var(--text-color) !important; background-color: var(--background-color) !important;
         }}
-        [data-testid="stSidebar"] div[data-baseweb="select"] svg {{
-            fill: var(--text-color) !important;
-        }}
-        
-        .sidebar-divider {{
-            margin: 15px 0; border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2);
-        }}
-        
+        [data-testid="stSidebar"] div[data-baseweb="select"] svg {{ fill: var(--text-color) !important; }}
+
         /* ============================================================
-           ✅ ส่วนที่แก้ไข: ปรับความสูงการ์ดให้เท่ากัน (Equal Height)
+           🖥️ DEFAULT STYLE (Desktop / จอใหญ่)
            ============================================================ */
         .listing-card, .property-card, .stat-card {{
             background-color: #FFFFFF !important;
@@ -83,44 +66,52 @@ def apply_custom_style():
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             border: 1px solid #E0E0E0;
             padding: 20px;
-
-            /* 1. เพิ่มความสูงขั้นต่ำให้มากขึ้น (เพราะมีรูปโลโก้จังหวัด) */
-            /* ถ้ายังมีบางใบยาวกว่าเพื่อน ให้เพิ่มเลขนี้เป็น 350px หรือ 380px */
+            
+            /* ✅ ความสูงบนคอมฯ */
             min-height: 340px; 
             
-            /* 2. จัดระเบียบภายในให้ยืดหยุ่น */
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* ดันหัวกับท้ายแยกจากกัน */
+            justify-content: space-between;
         }}
 
-        /* 3. บังคับให้ส่วน 'ราคา' (div ตัวสุดท้าย) ดันตัวเองไปติดขอบล่างเสมอ */
+        /* ดันราคาไปล่างสุด (เฉพาะบนคอม) */
         .property-card > div:last-child, .listing-card .card-body > div:last-child {{
-             margin-top: auto !important; 
+             margin-top: auto; 
              padding-top: 15px;
         }}
 
-        /* สีตัวหนังสือ */
-        .listing-card div, .property-card div, .stat-card div {{
-            color: #31333F; 
+        /* ============================================================
+           📱 MOBILE OVERRIDE (บังคับแก้เฉพาะมือถือ)
+           ============================================================ */
+        @media only screen and (max-width: 900px) {{
+            /* 1. ยกเลิกความสูงขั้นต่ำทิ้งทั้งหมด */
+            .listing-card, .property-card, .stat-card {{
+                min-height: unset !important;   /* ยกเลิกค่า 340px */
+                height: auto !important;        /* ให้สูงเท่าเนื้อหาจริง */
+                display: block !important;      /* ยกเลิก Flexbox */
+                padding: 15px !important;
+                margin-bottom: 12px !important;
+            }}
+
+            /* 2. ดึงราคาขึ้นมาต่อท้ายเนื้อหาทันที */
+            .property-card > div:last-child, .listing-card .card-body > div:last-child {{
+                margin-top: 10px !important;    /* เว้นห่างนิดเดียวพอ */
+                padding-top: 10px !important;
+                border-top: 1px dashed #eee;    /* เส้นประคั่นบางๆ */
+            }}
         }}
 
-        /* สียกเว้น */
-        .card-price, div[style*="color:#2ECC71"] {{
-            color: #2ECC71 !important;
-        }}
-        
-        div[style*="background:#1A365D"] {{
-            color: #FFFFFF !important;
-        }}
+        /* --- Colors --- */
+        .listing-card div, .property-card div, .stat-card div {{ color: #31333F; }}
+        .card-price, div[style*="color:#2ECC71"] {{ color: #2ECC71 !important; }}
+        div[style*="background:#1A365D"] {{ color: #FFFFFF !important; }}
         
         .vs-badge {{
-            background-color: #31333F; 
-            color: #FFFFFF;
+            background-color: #31333F; color: #FFFFFF;
             width: 40px; height: 40px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-weight: 900;
-            border: 2px solid #FFFFFF;
+            font-weight: 900; border: 2px solid #FFFFFF;
         }}
     </style>
     """, unsafe_allow_html=True)
