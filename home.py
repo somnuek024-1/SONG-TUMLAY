@@ -102,6 +102,8 @@ with col_map:
                 ).add_to(mc)
     st_folium(m, height=500, use_container_width=True)
 
+# ... (โค้ดส่วนบนเหมือนเดิม) ...
+
 with col_list:
     st.subheader("🏆 รายการ (Top 5)")
     if not df_display.empty:
@@ -109,12 +111,15 @@ with col_list:
         for _, row in top_list.iterrows():
             st.markdown(f"""
             <div class="property-card">
-                <div style="display:flex; justify-content:space-between;">
-                    <div style="font-weight:bold;">{row['Tambon']}</div>
-                    <div style="background:#1A365D; color:white; padding:2px 8px; border-radius:10px; font-size:11px;">{row['Total_Score']}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-weight:bold; font-size:20px;">{row['Tambon']}</div>
+                    
+                    <div style="background:#1A365D; color:white; padding:4px 10px; border-radius:10px; font-size:14px; font-weight:bold;">{row['Total_Score']}</div>
                 </div>
-                <div style="font-size:12px; opacity:0.7;">📍 {row['Amphoe']}, {row['Province']}</div>
-                <div style="margin-top:5px; font-weight:bold; color:#2ECC71; font-size:16px;">฿{row['Est_Land_Price']:,.0f}</div>
+                
+                <div style="font-size:14px; opacity:0.8; margin-top:5px;">📍 {row['Amphoe']}, {row['Province']}</div>
+                
+                <div style="margin-top:8px; font-weight:bold; color:#2ECC71; font-size:22px;">฿{row['Est_Land_Price']:,.0f}</div>
             </div>""", unsafe_allow_html=True)
 
 # --- 🚀 ส่วนที่กู้คืนกลับมา (Price Breakdown) ---
@@ -186,3 +191,4 @@ if not df_display.empty:
                               plot_bgcolor='rgba(0,0,0,0)',
                               margin=dict(l=20, r=20, t=20, b=20))
             st.plotly_chart(fig, use_container_width=True)
+
