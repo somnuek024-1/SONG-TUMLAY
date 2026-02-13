@@ -40,18 +40,29 @@ def process_data(df):
 
 df_display = process_data(df_all_years)
 
-# --- CSS Styling (Dark Theme Only) ---
+# --- CSS Styling (แก้ไขสีตัวอักษร) ---
 st.markdown("""
 <style>
-    /* พื้นหลังหลักสี Dark #1A2228 */
+    /* 1. พื้นหลังหลักสี Dark */
     [data-testid="stAppViewContainer"] {
         background-color: #1A2228;
-        color: white;
     }
     
-    /* Header สีเดียวกับพื้นหลัง */
+    /* 2. Header สีเดียวกับพื้นหลัง */
     header[data-testid="stHeader"] {
         background-color: #1A2228;
+    }
+    
+    /* 3. ✅ แก้ไขสำคัญ: บังคับให้ Label ของ Widget และข้อความทั่วไปเป็นสีขาว */
+    .stSelectbox label, .stMarkdown, h1, h2, h3, p {
+        color: #ffffff !important;
+    }
+    
+    /* 4. แก้ไข Dropdown ให้เข้ากับ Dark Theme */
+    div[data-baseweb="select"] > div {
+        background-color: #262730 !important;
+        color: white !important;
+        border-color: rgba(255,255,255,0.2) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -69,22 +80,18 @@ st.markdown("""
     color: white;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 ">
-    <div style="font-size: 48px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;">
+    <div style="font-size: 48px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; color: white;">
         COMPARE LOCATIONS
     </div>
-    <div style="font-size: 18px; font-weight: 300; opacity: 0.9;">
+    <div style="font-size: 18px; font-weight: 300; opacity: 0.9; color: white;">
         เปรียบเทียบศักยภาพทำเลแบบ Head-to-Head
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ❌ ลบส่วน Slider (ตัวกรองงบประมาณ) ออกแล้วครับ
-
 # --- 4. Location Selectors ---
 if not df_display.empty:
     col_sel1, col_vs, col_sel2 = st.columns([1, 0.2, 1])
-    
-    # ใช้ df_display เต็มๆ โดยไม่ต้องกรองราคา
     
     with col_sel1:
         st.markdown("### 🏙️ ทำเลที่ 1 (Location A)")
@@ -114,7 +121,7 @@ if not df_display.empty:
 
         # --- 5. Head-to-Head Comparison ---
         st.markdown("""
-            <div style="font-size:24px; font-weight:bold; margin-bottom:20px; display:flex; align-items:center;">
+            <div style="font-size:24px; font-weight:bold; margin-bottom:20px; display:flex; align-items:center; color: white;">
                 ⚡ วัดกันที่ตัวเลขจริง (Head-to-Head)
             </div>
         """, unsafe_allow_html=True)
@@ -131,6 +138,8 @@ if not df_display.empty:
                 flex_a = (val1 / total) * 100
                 flex_b = (val2 / total) * 100
 
+            # หมายเหตุ: ในการ์ดนี้เราใช้ Inline Style กำหนดสีเข้ม (color:#555, #1A365D) 
+            # ซึ่งจะทับ CSS Global สีขาว ทำให้การ์ดยังคงอ่านได้ชัดเจนบนพื้นหลังขาวครับ
             return f"""
             <div style="background-color: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #eee; margin-bottom: 20px;">
                 <div style="font-size:16px; font-weight:bold; color:#555; margin-bottom:15px; text-align:center;">{title}</div>
@@ -189,7 +198,7 @@ if not df_display.empty:
             fig.update_layout(
                 barmode='group', height=350,
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(family="Sarabun", color="white"), # ตัวอักษรสีขาว
+                font=dict(family="Sarabun", color="white"), # ✅ ตัวอักษรในกราฟเป็นสีขาว
                 margin=dict(l=10, r=10, t=10, b=10),
                 legend=dict(orientation="h", y=1.1, font=dict(color="white"))
             )
