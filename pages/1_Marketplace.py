@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-# import base64  <-- ไม่ได้ใช้แล้ว ลบออก
 import os
 import numpy as np
 from style_utils import apply_custom_style
@@ -9,9 +8,6 @@ st.set_page_config(page_title="SongTumLay Marketplace", layout="wide", page_icon
 apply_custom_style()
 
 # --- Functions ---
-# ❌ ลบฟังก์ชัน get_image_base64 ออก เพราะไม่ได้ใช้แล้ว
-# ❌ ลบฟังก์ชัน find_province_image ออก เพราะไม่ได้ใช้แล้ว
-
 @st.cache_data
 def load_data():
     try:
@@ -36,12 +32,10 @@ st.markdown("""
         background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070&auto=format&fit=crop');
         background-size: cover; background-position: center; padding: 60px 20px; text-align: center; border-radius: 0 0 20px 20px; margin-bottom: 30px; color: white;
     }
-    /* ❌ ลบ CSS ของรูปภาพออก (.card-img-container, .card-img) */
-    
     .card-body { 
-        padding: 20px; /* เพิ่ม padding หน่อยให้น่าอ่านขึ้น */
+        padding: 20px; 
         flex-grow: 1; display: flex; flex-direction: column; 
-        min-height: 120px; /* กำหนดความสูงขั้นต่ำให้การ์ดเท่ากัน */
+        min-height: 120px; 
     }
     .card-price { color: #2ECC71; font-size: 22px; font-weight: 700; margin-top: auto; padding-top: 10px; }
 </style>
@@ -52,19 +46,36 @@ st.markdown("""<div class="hero-container"><div style="font-size:42px; font-weig
 # --- Sidebar Filters ---
 st.sidebar.markdown("### 🔍 ค้นหาพื้นที่")
 
-# 1. Slider เลือกช่วงราคา (ทุน)
+# 1. ช่องกรอกราคา (Input Number) --- ✅ แก้ไขตรงนี้
 if not df.empty:
-    min_val = int(df['Est_Land_Price'].min())
-    max_val = int(df['Est_Land_Price'].max())
+    min_val_data = int(df['Est_Land_Price'].min())
+    max_val_data = int(df['Est_Land_Price'].max())
     
-    price_range = st.sidebar.slider(
-        "💰 ทุน (งบประมาณ)",
-        min_value=min_val,
-        max_value=max_val,
-        value=(min_val, max_val),
-        step=1000,
-        format="฿%d"
-    )
+    st.sidebar.write("💰 **งบประมาณ (ทุน)**")
+    
+    # แบ่งเป็น 2 คอลัมน์เล็กๆ ใน Sidebar
+    col_min, col_max = st.sidebar.columns(2)
+    
+    with col_min:
+        min_input = st.number_input(
+            "ต่ำสุด (Min)", 
+            min_value=0, 
+            max_value=max_val_data, 
+            value=min_val_data, 
+            step=50000
+        )
+        
+    with col_max:
+        max_input = st.number_input(
+            "สูงสุด (Max)", 
+            min_value=0, 
+            max_value=max_val_data, 
+            value=max_val_data, 
+            step=50000
+        )
+    
+    # จับมารวมเป็นตัวแปร price_range เหมือนเดิม เพื่อให้ logic ข้างล่างทำงานต่อได้
+    price_range = (min_input, max_input)
 else:
     price_range = (0, 0)
 
@@ -104,7 +115,7 @@ if not df_show.empty:
         cols = st.columns(cols_per_row)
         for i, (index, item) in enumerate(row.iterrows()):
             with cols[i]:
-                # ✅ แก้ไขตรงนี้: ตัดส่วนที่เกี่ยวกับรูปภาพออกทั้งหมด
+                # การ์ดแบบไม่มีรูปภาพ
                 card_html = f"""
                 <div class="listing-card">
                     <div class="card-body">
