@@ -28,6 +28,12 @@ df = load_data()
 # --- CSS เฉพาะหน้า Marketplace ---
 st.markdown("""
 <style>
+    /* ✅ แก้ไข: เปลี่ยนสีพื้นหลังทั้งหน้าเป็น #1A2228 */
+    [data-testid="stAppViewContainer"] {
+        background-color: #1A2228;
+        color: white; /* บังคับตัวหนังสือทั่วไปให้เป็นสีขาวด้วย เพื่อให้อ่านออกบนพื้นหลังเข้ม */
+    }
+
     .hero-container {
         background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070&auto=format&fit=crop');
         background-size: cover; background-position: center; padding: 60px 20px; text-align: center; border-radius: 0 0 20px 20px; margin-bottom: 30px; color: white;
@@ -96,7 +102,6 @@ if not df_show.empty:
     
     cols_per_row = 4
     
-    # ✅ แก้ไขตรงนี้: ลบ .head(100) ออก เพื่อให้แสดงข้อมูลทั้งหมด
     df_display = df_show 
     
     rows = [df_display.iloc[i:i+cols_per_row] for i in range(0, len(df_display), cols_per_row)]
