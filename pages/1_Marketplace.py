@@ -95,18 +95,15 @@ if not df_show.empty:
     st.write(f"พบ {len(df_show)} รายการในช่วงราคา {price_range[0]:,} - {price_range[1]:,} บาท")
     
     cols_per_row = 4
-    df_display = df_show.head(100)
+    
+    # ✅ แก้ไขตรงนี้: ลบ .head(100) ออก เพื่อให้แสดงข้อมูลทั้งหมด
+    df_display = df_show 
+    
     rows = [df_display.iloc[i:i+cols_per_row] for i in range(0, len(df_display), cols_per_row)]
     for row in rows:
         cols = st.columns(cols_per_row)
         for i, (index, item) in enumerate(row.iterrows()):
             with cols[i]:
-                # ✅ จุดที่แก้ไข: ปรับ CSS ในบรรทัดที่แสดงชื่ออำเภอ/จังหวัด
-                # 1. white-space: nowrap -> บังคับบรรทัดเดียว
-                # 2. overflow: hidden; text-overflow: ellipsis; -> ถ้าชื่อยาวเกินให้ขึ้น ...
-                # 3. font-size: 16px -> เพิ่มขนาด
-                # 4. color: #000000 -> เปลี่ยนเป็นสีดำ
-                
                 card_html = f"""
                 <div class="listing-card">
                     <div class="card-body">
