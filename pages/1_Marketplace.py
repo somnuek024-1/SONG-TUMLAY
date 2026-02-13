@@ -28,10 +28,15 @@ df = load_data()
 # --- CSS เฉพาะหน้า Marketplace ---
 st.markdown("""
 <style>
-    /* ✅ แก้ไข: เปลี่ยนสีพื้นหลังทั้งหน้าเป็น #1A2228 */
+    /* พื้นหลังหลัก */
     [data-testid="stAppViewContainer"] {
         background-color: #1A2228;
-        color: white; /* บังคับตัวหนังสือทั่วไปให้เป็นสีขาวด้วย เพื่อให้อ่านออกบนพื้นหลังเข้ม */
+        color: white;
+    }
+    
+    /* ✅ แก้ไข: เปลี่ยนสีแถบด้านบน (Header) ให้เป็นสีเดียวกับพื้นหลัง */
+    header[data-testid="stHeader"] {
+        background-color: #1A2228;
     }
 
     .hero-container {
