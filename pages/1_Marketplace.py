@@ -39,11 +39,14 @@ st.markdown("""
         background-color: #1A2228;
     }
 
-    /* ✅ แก้ไข: บังคับให้ตัวหนังสือในช่องกรอกตัวเลข (Input) เป็นสีดำ */
-    input[type="number"] {
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
-        caret-color: #000000 !important; /* สีของ Cursor เวลาพิมพ์ */
+    /* ✅ แก้ไข: ปรับช่องกรอกตัวเลขให้เหมือนช่องเลือกจังหวัด (Dark Theme Style) */
+    div[data-testid="stNumberInput"] input {
+        color: #ffffff !important; /* ตัวหนังสือสีขาว */
+        background-color: #262730 !important; /* พื้นหลังสีเทาเข้ม (เหมือน Dropdown) */
+        border: 1px solid rgba(255, 255, 255, 0.2) !important; /* ขอบจางๆ */
+        border-radius: 4px; /* ความโค้งมนเท่ากัน */
+        -webkit-text-fill-color: #ffffff !important;
+        caret-color: #ffffff !important; /* Cursor สีขาว */
     }
 
     .hero-container {
