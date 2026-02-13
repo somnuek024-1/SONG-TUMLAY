@@ -46,35 +46,21 @@ st.markdown("""<div class="hero-container"><div style="font-size:42px; font-weig
 # --- Sidebar Filters ---
 st.sidebar.markdown("### 🔍 ค้นหาพื้นที่")
 
-# 1. ช่องกรอกราคา (Input Number) --- ✅ แก้ไขตรงนี้
+# 1. ช่องกรอกราคา (Input Number)
 if not df.empty:
     min_val_data = int(df['Est_Land_Price'].min())
     max_val_data = int(df['Est_Land_Price'].max())
     
     st.sidebar.write("💰 **งบประมาณ (ทุน)**")
     
-    # แบ่งเป็น 2 คอลัมน์เล็กๆ ใน Sidebar
     col_min, col_max = st.sidebar.columns(2)
     
     with col_min:
-        min_input = st.number_input(
-            "ต่ำสุด (Min)", 
-            min_value=0, 
-            max_value=max_val_data, 
-            value=min_val_data, 
-            step=50000
-        )
+        min_input = st.number_input("ต่ำสุด (Min)", min_value=0, max_value=max_val_data, value=min_val_data, step=50000)
         
     with col_max:
-        max_input = st.number_input(
-            "สูงสุด (Max)", 
-            min_value=0, 
-            max_value=max_val_data, 
-            value=max_val_data, 
-            step=50000
-        )
+        max_input = st.number_input("สูงสุด (Max)", min_value=0, max_value=max_val_data, value=max_val_data, step=50000)
     
-    # จับมารวมเป็นตัวแปร price_range เหมือนเดิม เพื่อให้ logic ข้างล่างทำงานต่อได้
     price_range = (min_input, max_input)
 else:
     price_range = (0, 0)
@@ -115,12 +101,17 @@ if not df_show.empty:
         cols = st.columns(cols_per_row)
         for i, (index, item) in enumerate(row.iterrows()):
             with cols[i]:
-                # การ์ดแบบไม่มีรูปภาพ
+                # ✅ จุดที่แก้ไข: ปรับ CSS ในบรรทัดที่แสดงชื่ออำเภอ/จังหวัด
+                # 1. white-space: nowrap -> บังคับบรรทัดเดียว
+                # 2. overflow: hidden; text-overflow: ellipsis; -> ถ้าชื่อยาวเกินให้ขึ้น ...
+                # 3. font-size: 16px -> เพิ่มขนาด
+                # 4. color: #000000 -> เปลี่ยนเป็นสีดำ
+                
                 card_html = f"""
                 <div class="listing-card">
                     <div class="card-body">
                         <div style="font-weight:800; font-size:18px;">ต. {item['Tambon']}</div>
-                        <div style="font-size:14px; opacity:0.7; margin-bottom:5px;">📍 {item['Amphoe']}, {item['Province']}</div>
+                        <div style="font-size:16px; color:#000000; margin-bottom:5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📍 {item['Amphoe']}, {item['Province']}</div>
                         <div class="card-price">฿{item['Est_Land_Price']:,.0f}</div>
                     </div>
                 </div>
