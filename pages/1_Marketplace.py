@@ -34,9 +34,16 @@ st.markdown("""
         color: white;
     }
     
-    /* ✅ แก้ไข: เปลี่ยนสีแถบด้านบน (Header) ให้เป็นสีเดียวกับพื้นหลัง */
+    /* แถบด้านบน (Header) */
     header[data-testid="stHeader"] {
         background-color: #1A2228;
+    }
+
+    /* ✅ แก้ไข: บังคับให้ตัวหนังสือในช่องกรอกตัวเลข (Input) เป็นสีดำ */
+    input[type="number"] {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+        caret-color: #000000 !important; /* สีของ Cursor เวลาพิมพ์ */
     }
 
     .hero-container {
