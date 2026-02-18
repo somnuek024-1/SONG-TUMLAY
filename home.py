@@ -63,8 +63,106 @@ else:
     df_view = pd.DataFrame()
     latest_year_str = "N/A"
 
+# --- CSS Styling สำหรับหน้า Home (แก้ไขสีพื้นหลัง) ---
+st.markdown("""
+<style>
+    /* พื้นหลังหลักสี Dark Theme */
+    [data-testid="stAppViewContainer"] {
+        background-color: #1A2228;
+        color: white;
+    }
+    
+    /* Header สีเดียวกับพื้นหลัง */
+    header[data-testid="stHeader"] {
+        background-color: #1A2228;
+    }
+    
+    /* บังคับตัวอักษรเป็นสีขาว */
+    .stMarkdown, p, h1, h2, h3 {
+        color: #ffffff !important;
+    }
+
+    /* Style ของกล่องตัวเลือกจังหวัด/อำเภอ */
+    div[data-baseweb="select"] > div {
+        background-color: #262730 !important;
+        color: white !important;
+        border-color: rgba(255,255,255,0.2) !important;
+    }
+
+    /* ✅ เพิ่ม CSS Style ให้กับ property-card ใหม่ ให้เหมือนกับรูปภาพ */
+    .property-card {
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border: 1px solid rgba(128, 128, 128, 0.2);
+    }
+    
+    .card-title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .card-title-text {
+        font-weight: 800;
+        font-size: 20px;
+        color: #000000;
+    }
+
+    .score-badge {
+        background-color: #1A365D;
+        color: white;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+    }
+
+    .card-location {
+        font-size: 14px;
+        color: #666666;
+        margin-bottom: 15px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .card-divider {
+        border-top: 1px dashed #ddd;
+        margin: 15px 0;
+    }
+
+    .card-price {
+        font-weight: bold;
+        color: #2ECC71;
+        font-size: 24px;
+    }
+
+</style>
+""", unsafe_allow_html=True)
+
 # --- 3. Sidebar Inputs ---
 st.sidebar.markdown("### 🔍 ค้นหาพื้นที่")
+
+# เพิ่ม Slider กรองงบประมาณ (ทุน) ตรงนี้เหมือนที่เคยทำ
+if not df_view.empty:
+    min_p = int(df_view['Est_Land_Price'].min())
+    max_p = int(df_view['Est_Land_Price'].max())
+    
+    price_range = st.sidebar.slider(
+        "💰 งบประมาณ (ทุน)",
+        min_value=min_p,
+        max_value=max_p,
+        value=(min_p, max_p),
+        step=1000,
+        format="฿%d"
+    )
+else:
+    price_range = (0, 0)
+
 provinces = ["ทั้งหมด"] + sorted(list(df_all_years['Province'].unique())) if not df_all_years.empty else []
 selected_prov = st.sidebar.selectbox("📍 จังหวัด", provinces)
 amphoes = ["ทั้งหมด"]
@@ -75,11 +173,20 @@ st.sidebar.caption("© 2024 SongTumLay Pro")
 
 # --- 4. Main Content ---
 
-# ❌ ลบ Title เก่าทิ้ง
-# st.title(f"วิเคราะห์ทำเล: ...")
+df_display = df_view.copy()
 
-# ✅ ใส่ Header ใหม่แบบรูปภาพ (Banner Style)
+if not df_display.empty:
+    df_display = df_display[
+        (df_display['Est_Land_Price'] >= price_range[0]) & 
+        (df_display['Est_Land_Price'] <= price_range[1])
+    ]
+
+if selected_prov != "ทั้งหมด": df_display = df_display[df_display['Province'] == selected_prov]
+if selected_amphoe != "ทั้งหมด": df_display = df_display[df_display['Amphoe'] == selected_amphoe]
+
 subtitle_text = f"พื้นที่: {selected_prov}" if selected_prov != 'ทั้งหมด' else "ภาพรวมประเทศไทย"
+if price_range[0] > min_p or price_range[1] < max_p:
+    subtitle_text += f" (งบ: ฿{price_range[0]:,.0f} - ฿{price_range[1]:,.0f})"
 
 st.markdown(f"""
 <div style="
@@ -102,16 +209,9 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-df_display = df_view.copy()
-if selected_prov != "ทั้งหมด": df_display = df_display[df_display['Province'] == selected_prov]
-if selected_amphoe != "ทั้งหมด": df_display = df_display[df_display['Amphoe'] == selected_amphoe]
-
 col_map, col_list = st.columns([2, 1.2])
 
 with col_map:
-    # ❌ ลบ Subheader "แผนที่ราคา (2566)" ออกตามคำขอ
-    # st.subheader(f"🗺️ แผนที่ราคา ({latest_year_str})")
-    
     center = [13.7563, 100.5018]
     zoom = 6
     if not df_display.empty:
@@ -119,8 +219,9 @@ with col_map:
         zoom = 10 if selected_amphoe == "ทั้งหมด" else 11
         
     m = folium.Map(location=center, zoom_start=zoom, tiles="CartoDB positron")
-    mc = MarkerCluster().add_to(m)
+    
     if not df_display.empty:
+        mc = MarkerCluster().add_to(m)
         for _, row in df_display.iterrows():
             if pd.notna(row['lat']):
                 color = '#2ECC71' if row['Total_Score'] >= 6 else ('#F1C40F' if row['Total_Score'] >= 3 else '#E74C3C')
@@ -135,22 +236,26 @@ with col_list:
     if not df_display.empty:
         top_list = df_display.sort_values('Total_Score', ascending=False).head(5)
         for _, row in top_list.iterrows():
+            # ✅ ปรับปรุงส่วนแสดงผลการ์ด ให้เหมือนกับรูปภาพที่คุณส่งมา (กล่องคะแนนสีน้ำเงิน มุมขวา)
             st.markdown(f"""
             <div class="property-card">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div style="font-weight:bold; font-size:20px;">{row['Tambon']}</div>
-                    <div style="background:#1A365D; color:white; padding:4px 10px; border-radius:10px; font-size:14px; font-weight:bold;">{row['Total_Score']}</div>
+                <div class="card-title-row">
+                    <div class="card-title-text">{row['Tambon']}</div>
+                    <div class="score-badge">{row['Total_Score']}</div>
                 </div>
-                <div style="font-size:14px; opacity:0.8; margin-top:5px;">📍 {row['Amphoe']}, {row['Province']}</div>
-                <div style="margin-top:8px; font-weight:bold; color:#2ECC71; font-size:22px;">฿{row['Est_Land_Price']:,.0f}</div>
+                <div class="card-location">📍 {row['Amphoe']}, {row['Province']}</div>
+                <div class="card-divider"></div>
+                <div class="card-price">฿{row['Est_Land_Price']:,.0f}</div>
             </div>""", unsafe_allow_html=True)
+    else:
+        st.warning("⚠️ ไม่พบข้อมูลในช่วงราคานี้")
 
 # --- 5. Price Breakdown Section (New Layout) ---
 st.markdown("---")
 st.subheader("🧮 แกะสูตรคำนวณราคา (Price Breakdown)")
-st.info("เลือกตำบลด้านล่าง เพื่อดูว่าทฤษฎีแต่ละตัวส่งผลต่อราคาอย่างไร")
 
 if not df_display.empty:
+    st.info("เลือกตำบลด้านล่าง เพื่อดูว่าทฤษฎีแต่ละตัวส่งผลต่อราคาอย่างไร")
     tambon_opts = df_display['Tambon'].unique()
     target_tambon = st.selectbox("🔍 เลือกตำบลเพื่อถอดสูตร", tambon_opts)
     
@@ -164,7 +269,7 @@ if not df_display.empty:
         
         # 1. Metric Cards (Grid Layout)
         html_code = f"""
-        <style>
+       <style>
             .metric-container {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }}
             .metric-card {{ background-color: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; overflow: hidden; border: 1px solid rgba(0,0,0,0.05); }}
             .card-title {{ font-size: 16px; font-weight: bold; color: #555; margin-bottom: 10px; }}
@@ -258,8 +363,10 @@ if not df_display.empty:
         fig.update_layout(
             title="เปรียบเทียบราคา vs ปัจจัยผลกระทบ", height=500,
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(family="Sarabun", size=14, color=st.get_option("theme.textColor")),
-            yaxis=dict(showgrid=True, gridcolor='#eee'), xaxis=dict(showgrid=False),
+            font=dict(family="Sarabun", size=14, color="white"), # เปลี่ยนสีอักษรกราฟเป็นสีขาวให้เข้ากับ Dark Mode
+            yaxis=dict(showgrid=True, gridcolor='#333'), xaxis=dict(showgrid=False),
             bargap=0.2, showlegend=False
         )
         st.plotly_chart(fig, use_container_width=True)
+else:
+    st.warning("⚠️ ไม่พบข้อมูลในช่วงราคานี้ หรือ ในพื้นที่ที่เลือก กรุณาปรับตัวกรอง")
