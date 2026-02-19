@@ -89,7 +89,7 @@ st.markdown("""
         border-color: rgba(255,255,255,0.2) !important;
     }
 
-    /* ✅ บังคับช่องกรอกตัวเลข (Number Input) ให้เข้ากับ Dark Theme */
+    /* บังคับช่องกรอกตัวเลข (Number Input) ให้เข้ากับ Dark Theme */
     div[data-testid="stNumberInput"] input {
         color: #ffffff !important;
         background-color: #262730 !important;
@@ -119,22 +119,22 @@ st.markdown("""
     .card-title-text {
         font-weight: 800;
         font-size: 20px;
-        color: #000000;
+        color: #000000 !important;
     }
 
-    /* ✅ ปรับแต่งกล่องคะแนนให้ใหญ่ขึ้น */
+    /* ปรับแต่งกล่องคะแนนให้ใหญ่ขึ้น */
     .score-badge {
         background-color: #1A365D;
-        color: white;
-        padding: 8px 18px; /* ขยายกรอบรอบๆ */
+        color: white !important;
+        padding: 8px 18px; 
         border-radius: 8px;
-        font-size: 22px; /* ขยายตัวหนังสือ */
+        font-size: 22px; 
         font-weight: 900;
     }
 
     .card-location {
         font-size: 14px;
-        color: #666666;
+        color: #666666 !important;
         margin-bottom: 15px;
         white-space: nowrap;
         overflow: hidden;
@@ -148,7 +148,7 @@ st.markdown("""
 
     .card-price {
         font-weight: bold;
-        color: #2ECC71;
+        color: #2ECC71 !important;
         font-size: 24px;
     }
 
@@ -158,7 +158,7 @@ st.markdown("""
 # --- 3. Sidebar Inputs ---
 st.sidebar.markdown("### 🔍 ค้นหาพื้นที่")
 
-# ✅ 1. เปลี่ยนตัวกรองงบประมาณจาก Slider เป็น Number Input 2 ช่อง
+# เปลี่ยนตัวกรองงบประมาณเป็น Number Input 2 ช่อง
 if not df_view.empty:
     min_p = int(df_view['Est_Land_Price'].min())
     max_p = int(df_view['Est_Land_Price'].max())
@@ -248,22 +248,22 @@ with col_list:
     if not df_display.empty:
         top_list = df_display.sort_values('Total_Score', ascending=False).head(5)
         for _, row in top_list.iterrows():
-            # ✅ 2. เพิ่มข้อความ "คะแนนความน่าลงทุน" สีดำขนาดเท่าชื่อแขวง ไว้หน้ากล่องคะแนน
-            st.markdown(f"""
+            # ✅ แก้ไขการเว้นวรรคและจัดรูปแบบ HTML เพื่อป้องกันปัญหาแสดงเป็นโค้ดดิบ
+            card_html = f"""
             <div class="property-card">
                 <div class="card-title-row">
                     <div class="card-title-text">{row['Tambon']}</div>
-                    
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <div style="font-size:20px; font-weight:bold; color:#000000;">คะแนนความน่าลงทุน</div>
-                        <div class="score-badge">{row['Total_Score']}</div>
+                        <span style="font-size:20px; font-weight:bold; color:#000000;">คะแนนความน่าลงทุน</span>
+                        <span class="score-badge">{row['Total_Score']}</span>
                     </div>
-                    
                 </div>
                 <div class="card-location">📍 {row['Amphoe']}, {row['Province']}</div>
                 <div class="card-divider"></div>
                 <div class="card-price">฿{row['Est_Land_Price']:,.0f}</div>
-            </div>""", unsafe_allow_html=True)
+            </div>
+            """
+            st.markdown(card_html, unsafe_allow_html=True)
     else:
         st.warning("⚠️ ไม่พบข้อมูลในช่วงราคานี้")
 
