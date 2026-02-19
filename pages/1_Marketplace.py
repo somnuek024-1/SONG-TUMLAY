@@ -52,11 +52,11 @@ st.markdown("""
         border-color: rgba(255,255,255,0.2) !important;
     }
 
-    /* บังคับช่องกรอกตัวเลข (Number Input) ให้เป็น Dark Theme */
+    /* ✅ CSS ส่วนนี้ทำให้ช่องกรอกงบประมาณเป็นสีเข้มตามรูปที่คุณต้องการครับ */
     div[data-testid="stNumberInput"] input {
-        color: #ffffff !important;
-        background-color: #262730 !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        color: #ffffff !important; /* ตัวหนังสือสีขาว */
+        background-color: #262730 !important; /* พื้นหลังสีเทาเข้ม */
+        border: 1px solid rgba(255, 255, 255, 0.2) !important; /* ขอบสีจางๆ */
         border-radius: 4px;
         -webkit-text-fill-color: #ffffff !important;
         caret-color: #ffffff !important;
@@ -137,6 +137,7 @@ if not df.empty:
     max_val_data = int(df['Est_Land_Price'].max())
     
     st.sidebar.write("💰 **งบประมาณ (ทุน)**")
+    # ช่องกรอกตัวเลขจะถูกจัดรูปแบบด้วย CSS ด้านบน
     col_min, col_max = st.sidebar.columns(2)
     with col_min:
         min_input = st.number_input("ต่ำสุด (Min)", min_value=0, max_value=max_val_data, value=min_val_data, step=50000)
@@ -184,7 +185,7 @@ if not df_show.empty:
                 # ดึงคะแนน Total_Score
                 score_val = item.get('Total_Score', 'N/A')
                 
-                # นำคะแนนมาใส่ในรูปแบบ HTML โดยเอาบรรทัดที่ว่างออก เพื่อป้องกันบัก Markdown
+                # นำคะแนนมาใส่ในรูปแบบ HTML
                 card_html = f"""
                 <div class="mk-card">
                     <div class="mk-title-row">
