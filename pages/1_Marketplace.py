@@ -21,7 +21,7 @@ def load_data():
         df_latest['Factor_Total'] = (df_latest['Factor_Density'] * df_latest['Factor_Centrality']).clip(0.5, 3.0)
         df_latest['Est_Land_Price'] = df_latest['Avg_Land_Price'] * df_latest['Factor_Total']
         
-        # ✅ คำนวณ Total_Score เพื่อนำมาแสดงบนกล่องคะแนน
+        # คำนวณ Total_Score เพื่อนำมาแสดงบนกล่องคะแนน
         max_inc = df_latest['Avg_Income'].max() or 1
         max_land = df_latest['Est_Land_Price'].max() or 1
         max_pop = df_latest['Total_Pop'].max() or 1
@@ -184,7 +184,7 @@ if not df_show.empty:
                 # ดึงคะแนน Total_Score
                 score_val = item.get('Total_Score', 'N/A')
                 
-                # นำคะแนนมาใส่ในรูปแบบ HTML ที่เรียกใช้ CSS class ด้านบน
+                # นำคะแนนมาใส่ในรูปแบบ HTML โดยเอาบรรทัดที่ว่างออก เพื่อป้องกันบัก Markdown
                 card_html = f"""
                 <div class="mk-card">
                     <div class="mk-title-row">
@@ -192,7 +192,6 @@ if not df_show.empty:
                         <div class="mk-score-badge">{score_val}</div>
                     </div>
                     <div class="mk-location">📍 {item['Amphoe']}, {item['Province']}</div>
-                    
                     <div class="mk-footer">
                         <div class="mk-divider"></div>
                         <div class="mk-price">฿{item['Est_Land_Price']:,.0f}</div>
