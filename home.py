@@ -63,7 +63,7 @@ else:
     df_view = pd.DataFrame()
     latest_year_str = "N/A"
 
-# --- CSS Styling สำหรับหน้า Home (แก้ไขสีพื้นหลัง) ---
+# --- CSS Styling สำหรับหน้า Home ---
 st.markdown("""
 <style>
     /* พื้นหลังหลักสี Dark Theme */
@@ -89,7 +89,17 @@ st.markdown("""
         border-color: rgba(255,255,255,0.2) !important;
     }
 
-    /* ✅ เพิ่ม CSS Style ให้กับ property-card ใหม่ ให้เหมือนกับรูปภาพ */
+    /* ✅ บังคับช่องกรอกตัวเลข (Number Input) ให้เข้ากับ Dark Theme */
+    div[data-testid="stNumberInput"] input {
+        color: #ffffff !important;
+        background-color: #262730 !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 4px;
+        -webkit-text-fill-color: #ffffff !important;
+        caret-color: #ffffff !important;
+    }
+
+    /* Style ให้กับ property-card ใหม่ */
     .property-card {
         background-color: #ffffff;
         border-radius: 12px;
@@ -112,13 +122,14 @@ st.markdown("""
         color: #000000;
     }
 
+    /* ✅ ปรับแต่งกล่องคะแนนให้ใหญ่ขึ้น */
     .score-badge {
         background-color: #1A365D;
         color: white;
-        padding: 6px 14px;
+        padding: 8px 18px; /* ขยายกรอบรอบๆ */
         border-radius: 8px;
-        font-size: 16px;
-        font-weight: bold;
+        font-size: 22px; /* ขยายตัวหนังสือ */
+        font-weight: 900;
     }
 
     .card-location {
@@ -147,19 +158,20 @@ st.markdown("""
 # --- 3. Sidebar Inputs ---
 st.sidebar.markdown("### 🔍 ค้นหาพื้นที่")
 
-# เพิ่ม Slider กรองงบประมาณ (ทุน) ตรงนี้เหมือนที่เคยทำ
+# ✅ 1. เปลี่ยนตัวกรองงบประมาณจาก Slider เป็น Number Input 2 ช่อง
 if not df_view.empty:
     min_p = int(df_view['Est_Land_Price'].min())
     max_p = int(df_view['Est_Land_Price'].max())
     
-    price_range = st.sidebar.slider(
-        "💰 งบประมาณ (ทุน)",
-        min_value=min_p,
-        max_value=max_p,
-        value=(min_p, max_p),
-        step=1000,
-        format="฿%d"
-    )
+    st.sidebar.write("💰 **งบประมาณ (ทุน)**")
+    
+    col_min, col_max = st.sidebar.columns(2)
+    with col_min:
+        min_input = st.number_input("ต่ำสุด (Min)", min_value=0, max_value=max_p, value=min_p, step=50000)
+    with col_max:
+        max_input = st.number_input("สูงสุด (Max)", min_value=0, max_value=max_p, value=max_p, step=50000)
+    
+    price_range = (min_input, max_input)
 else:
     price_range = (0, 0)
 
@@ -236,12 +248,17 @@ with col_list:
     if not df_display.empty:
         top_list = df_display.sort_values('Total_Score', ascending=False).head(5)
         for _, row in top_list.iterrows():
-            # ✅ ปรับปรุงส่วนแสดงผลการ์ด ให้เหมือนกับรูปภาพที่คุณส่งมา (กล่องคะแนนสีน้ำเงิน มุมขวา)
+            # ✅ 2. เพิ่มข้อความ "คะแนนความน่าลงทุน" สีดำขนาดเท่าชื่อแขวง ไว้หน้ากล่องคะแนน
             st.markdown(f"""
             <div class="property-card">
                 <div class="card-title-row">
                     <div class="card-title-text">{row['Tambon']}</div>
-                    <div class="score-badge">{row['Total_Score']}</div>
+                    
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="font-size:20px; font-weight:bold; color:#000000;">คะแนนความน่าลงทุน</div>
+                        <div class="score-badge">{row['Total_Score']}</div>
+                    </div>
+                    
                 </div>
                 <div class="card-location">📍 {row['Amphoe']}, {row['Province']}</div>
                 <div class="card-divider"></div>
