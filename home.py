@@ -243,12 +243,33 @@ with col_map:
                 ).add_to(mc)
     st_folium(m, height=500, use_container_width=True)
 
+    # ✅ --- ส่วนที่เพิ่มใหม่ (แบบที่ 1): สถิติภาพรวม ---
+    if not df_display.empty:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### 📊 สรุปสถิติภาพรวมพื้นที่")
+        
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown(f"""<div style="background-color:#262730; padding:15px; border-radius:10px; text-align:center;">
+                <div style="font-size:14px; color:#aaa;">ราคาเฉลี่ย (ตร.ว.)</div>
+                <div style="font-size:24px; font-weight:bold; color:#2ECC71;">฿{df_display['Est_Land_Price'].mean():,.0f}</div>
+            </div>""", unsafe_allow_html=True)
+        with c2:
+            st.markdown(f"""<div style="background-color:#262730; padding:15px; border-radius:10px; text-align:center;">
+                <div style="font-size:14px; color:#aaa;">คะแนนเฉลี่ย</div>
+                <div style="font-size:24px; font-weight:bold; color:#3498DB;">{df_display['Total_Score'].mean():.1f} / 10</div>
+            </div>""", unsafe_allow_html=True)
+        with c3:
+            st.markdown(f"""<div style="background-color:#262730; padding:15px; border-radius:10px; text-align:center;">
+                <div style="font-size:14px; color:#aaa;">จำนวนพื้นที่ในโซนนี้</div>
+                <div style="font-size:24px; font-weight:bold; color:#F1C40F;">{len(df_display)} แห่ง</div>
+            </div>""", unsafe_allow_html=True)
+
 with col_list:
     st.subheader("🏆 รายการ (Top 5)")
     if not df_display.empty:
         top_list = df_display.sort_values('Total_Score', ascending=False).head(5)
         for _, row in top_list.iterrows():
-            # ✅ แก้ไขการเว้นวรรคและจัดรูปแบบ HTML เพื่อป้องกันปัญหาแสดงเป็นโค้ดดิบ
             card_html = f"""
             <div class="property-card">
                 <div class="card-title-row">
@@ -380,7 +401,7 @@ if not df_display.empty:
         fig.update_layout(
             title="เปรียบเทียบราคา vs ปัจจัยผลกระทบ", height=500,
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(family="Sarabun", size=14, color="white"), # เปลี่ยนสีอักษรกราฟเป็นสีขาวให้เข้ากับ Dark Mode
+            font=dict(family="Sarabun", size=14, color="white"),
             yaxis=dict(showgrid=True, gridcolor='#333'), xaxis=dict(showgrid=False),
             bargap=0.2, showlegend=False
         )
