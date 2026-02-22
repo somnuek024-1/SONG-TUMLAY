@@ -242,31 +242,27 @@ with col_map:
                 ).add_to(mc)
     st_folium(m, height=500, use_container_width=True)
 
-    # ✅ --- ส่วนที่เพิ่มใหม่ (แบบที่ 2): กราฟ Donut Chart ---
-    if not df_display.empty:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 🍩 สัดส่วนเกรดทำเลในพื้นที่")
-        
-        conditions = [
-            (df_display['Total_Score'] >= 6),
-            (df_display['Total_Score'] >= 3) & (df_display['Total_Score'] < 6),
-            (df_display['Total_Score'] < 3)
-        ]
-        choices = ['เกรด A (คะแนน 6-10)', 'เกรด B (คะแนน 3-5.9)', 'เกรด C (คะแนน < 3)']
-        df_display['Grade'] = np.select(conditions, choices, default='Unknown')
-
-        grade_counts = df_display['Grade'].value_counts().reset_index()
-        grade_counts.columns = ['Grade', 'Count']
-
-        color_map = {'เกรด A (คะแนน 6-10)': '#2ECC71', 'เกรด B (คะแนน 3-5.9)': '#F1C40F', 'เกรด C (คะแนน < 3)': '#E74C3C'}
-
-        fig_donut = px.pie(grade_counts, values='Count', names='Grade', hole=0.5, color='Grade', color_discrete_map=color_map)
-        fig_donut.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='white'), margin=dict(t=20, b=0, l=0, r=0), height=220,
-            legend=dict(orientation="v", yanchor="middle", y=0.5, xanchor="left", x=1)
-        )
-        st.plotly_chart(fig_donut, use_container_width=True)
+    # ✅ --- ส่วนที่เพิ่มใหม่ (แบบที่ 3): Map Legend ---
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style="background-color: #262730; padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="font-weight: 800; font-size: 16px; margin-bottom: 15px; color: white;">📍 คำอธิบายสัญลักษณ์ (Map Legend)</div>
+        <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #2ECC71; box-shadow: 0 0 8px #2ECC71;"></div>
+                <span style="color: white; font-size: 15px;">ทำเลเกรด A (คะแนน 6 - 10)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #F1C40F; box-shadow: 0 0 8px #F1C40F;"></div>
+                <span style="color: white; font-size: 15px;">ทำเลเกรด B (คะแนน 3 - 5.9)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #E74C3C; box-shadow: 0 0 8px #E74C3C;"></div>
+                <span style="color: white; font-size: 15px;">ทำเลเกรด C (คะแนน < 3)</span>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 with col_list:
     st.subheader("🏆 รายการ (Top 5)")
