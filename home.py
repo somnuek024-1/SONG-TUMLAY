@@ -180,7 +180,7 @@ amphoes = ["ทั้งหมด"]
 if selected_prov != "ทั้งหมด":
     amphoes += sorted(df_all_years[df_all_years['Province'] == selected_prov]['Amphoe'].unique())
 selected_amphoe = st.sidebar.selectbox("🏙️ อำเภอ/เขต", amphoes)
-st.sidebar.caption("© 2026 SongTumLay Pro")
+st.sidebar.caption("© 2024 SongTumLay Pro")
 
 # --- 4. Main Content ---
 
@@ -241,7 +241,7 @@ with col_map:
                     popup=f"<b>{row['Tambon']}</b><br>฿{row['Est_Land_Price']:,.0f}", tooltip=row['Tambon']
                 ).add_to(mc)
     
-    # ความสูงแผนที่คงไว้ที่ 500 เพื่อแบ่งที่ให้กล่องด้านล่าง
+    # ความสูงแผนที่คงไว้ที่ 500
     st_folium(m, height=500, use_container_width=True)
 
     # ✅ --- เพิ่ม ข้อ 1: สถิติภาพรวม ---
