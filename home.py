@@ -240,29 +240,8 @@ with col_map:
                     [row['lat'], row['lon']], radius=6, color=color, fill=True, fill_color=color, fill_opacity=0.9,
                     popup=f"<b>{row['Tambon']}</b><br>฿{row['Est_Land_Price']:,.0f}", tooltip=row['Tambon']
                 ).add_to(mc)
-    st_folium(m, height=500, use_container_width=True)
-
-    # ✅ --- ส่วนที่เพิ่มใหม่ (แบบที่ 3): Map Legend ---
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("""
-    <div style="background-color: #262730; padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-        <div style="font-weight: 800; font-size: 16px; margin-bottom: 15px; color: white;">📍 คำอธิบายสัญลักษณ์ (Map Legend)</div>
-        <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #2ECC71; box-shadow: 0 0 8px #2ECC71;"></div>
-                <span style="color: white; font-size: 15px;">ทำเลเกรด A (คะแนน 6 - 10)</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #F1C40F; box-shadow: 0 0 8px #F1C40F;"></div>
-                <span style="color: white; font-size: 15px;">ทำเลเกรด B (คะแนน 3 - 5.9)</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #E74C3C; box-shadow: 0 0 8px #E74C3C;"></div>
-                <span style="color: white; font-size: 15px;">ทำเลเกรด C (คะแนน < 3)</span>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # ✅ แก้ไขแบบที่ 4: เปลี่ยน height เป็น 730
+    st_folium(m, height=730, use_container_width=True)
 
 with col_list:
     st.subheader("🏆 รายการ (Top 5)")
