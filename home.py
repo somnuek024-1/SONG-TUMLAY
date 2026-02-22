@@ -158,7 +158,6 @@ st.markdown("""
 # --- 3. Sidebar Inputs ---
 st.sidebar.markdown("### 🔍 ค้นหาพื้นที่")
 
-# เปลี่ยนตัวกรองงบประมาณเป็น Number Input 2 ช่อง
 if not df_view.empty:
     min_p = int(df_view['Est_Land_Price'].min())
     max_p = int(df_view['Est_Land_Price'].max())
@@ -181,7 +180,7 @@ amphoes = ["ทั้งหมด"]
 if selected_prov != "ทั้งหมด":
     amphoes += sorted(df_all_years[df_all_years['Province'] == selected_prov]['Amphoe'].unique())
 selected_amphoe = st.sidebar.selectbox("🏙️ อำเภอ/เขต", amphoes)
-st.sidebar.caption("© 2024 SongTumLay Pro")
+st.sidebar.caption("© 2026 SongTumLay Pro")
 
 # --- 4. Main Content ---
 
@@ -242,7 +241,7 @@ with col_map:
                     popup=f"<b>{row['Tambon']}</b><br>฿{row['Est_Land_Price']:,.0f}", tooltip=row['Tambon']
                 ).add_to(mc)
     
-    # ปรับความสูงแผนที่เป็น 500 เพื่อแบ่งที่ให้กล่องด้านล่าง
+    # ความสูงแผนที่คงไว้ที่ 500 เพื่อแบ่งที่ให้กล่องด้านล่าง
     st_folium(m, height=500, use_container_width=True)
 
     # ✅ --- เพิ่ม ข้อ 1: สถิติภาพรวม ---
@@ -267,7 +266,7 @@ with col_map:
                 <div style="font-size:24px; font-weight:bold; color:#F1C40F;">{len(df_display)} แห่ง</div>
             </div>""", unsafe_allow_html=True)
 
-        # ✅ --- เพิ่ม ข้อ 3: คำอธิบายสัญลักษณ์ (Map Legend) ต่อด้านล่างเลย ---
+        # ✅ --- เพิ่ม ข้อ 3: คำอธิบายสัญลักษณ์ (Map Legend) ---
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("""
         <div style="background-color: #262730; padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
@@ -294,7 +293,6 @@ with col_list:
     if not df_display.empty:
         top_list = df_display.sort_values('Total_Score', ascending=False).head(5)
         for _, row in top_list.iterrows():
-            # ✅ แก้ไขการเว้นวรรคและจัดรูปแบบ HTML เพื่อป้องกันปัญหาแสดงเป็นโค้ดดิบ
             card_html = f"""
             <div class="property-card">
                 <div class="card-title-row">
@@ -426,7 +424,7 @@ if not df_display.empty:
         fig.update_layout(
             title="เปรียบเทียบราคา vs ปัจจัยผลกระทบ", height=500,
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(family="Sarabun", size=14, color="white"), # เปลี่ยนสีอักษรกราฟเป็นสีขาวให้เข้ากับ Dark Mode
+            font=dict(family="Sarabun", size=14, color="white"),
             yaxis=dict(showgrid=True, gridcolor='#333'), xaxis=dict(showgrid=False),
             bargap=0.2, showlegend=False
         )
