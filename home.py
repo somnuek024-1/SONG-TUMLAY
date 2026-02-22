@@ -158,6 +158,7 @@ st.markdown("""
 # --- 3. Sidebar Inputs ---
 st.sidebar.markdown("### 🔍 ค้นหาพื้นที่")
 
+# เปลี่ยนตัวกรองงบประมาณเป็น Number Input 2 ช่อง
 if not df_view.empty:
     min_p = int(df_view['Est_Land_Price'].min())
     max_p = int(df_view['Est_Land_Price'].max())
@@ -240,14 +241,60 @@ with col_map:
                     [row['lat'], row['lon']], radius=6, color=color, fill=True, fill_color=color, fill_opacity=0.9,
                     popup=f"<b>{row['Tambon']}</b><br>฿{row['Est_Land_Price']:,.0f}", tooltip=row['Tambon']
                 ).add_to(mc)
-    # ✅ แก้ไขแบบที่ 4: เปลี่ยน height เป็น 730
-    st_folium(m, height=730, use_container_width=True)
+    
+    # ปรับความสูงแผนที่เป็น 500 เพื่อแบ่งที่ให้กล่องด้านล่าง
+    st_folium(m, height=500, use_container_width=True)
+
+    # ✅ --- เพิ่ม ข้อ 1: สถิติภาพรวม ---
+    if not df_display.empty:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### 📊 สรุปสถิติภาพรวมพื้นที่")
+        
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown(f"""<div style="background-color:#262730; padding:15px; border-radius:10px; text-align:center;">
+                <div style="font-size:14px; color:#aaa;">ราคาเฉลี่ย (ตร.ว.)</div>
+                <div style="font-size:24px; font-weight:bold; color:#2ECC71;">฿{df_display['Est_Land_Price'].mean():,.0f}</div>
+            </div>""", unsafe_allow_html=True)
+        with c2:
+            st.markdown(f"""<div style="background-color:#262730; padding:15px; border-radius:10px; text-align:center;">
+                <div style="font-size:14px; color:#aaa;">คะแนนเฉลี่ย</div>
+                <div style="font-size:24px; font-weight:bold; color:#3498DB;">{df_display['Total_Score'].mean():.1f} / 10</div>
+            </div>""", unsafe_allow_html=True)
+        with c3:
+            st.markdown(f"""<div style="background-color:#262730; padding:15px; border-radius:10px; text-align:center;">
+                <div style="font-size:14px; color:#aaa;">จำนวนพื้นที่ในโซนนี้</div>
+                <div style="font-size:24px; font-weight:bold; color:#F1C40F;">{len(df_display)} แห่ง</div>
+            </div>""", unsafe_allow_html=True)
+
+        # ✅ --- เพิ่ม ข้อ 3: คำอธิบายสัญลักษณ์ (Map Legend) ต่อด้านล่างเลย ---
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style="background-color: #262730; padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="font-weight: 800; font-size: 16px; margin-bottom: 15px; color: white;">📍 คำอธิบายสัญลักษณ์ (Map Legend)</div>
+            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #2ECC71; box-shadow: 0 0 8px #2ECC71;"></div>
+                    <span style="color: white; font-size: 15px;">ทำเลเกรด A (คะแนน 6 - 10)</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #F1C40F; box-shadow: 0 0 8px #F1C40F;"></div>
+                    <span style="color: white; font-size: 15px;">ทำเลเกรด B (คะแนน 3 - 5.9)</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #E74C3C; box-shadow: 0 0 8px #E74C3C;"></div>
+                    <span style="color: white; font-size: 15px;">ทำเลเกรด C (คะแนน < 3)</span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 with col_list:
     st.subheader("🏆 รายการ (Top 5)")
     if not df_display.empty:
         top_list = df_display.sort_values('Total_Score', ascending=False).head(5)
         for _, row in top_list.iterrows():
+            # ✅ แก้ไขการเว้นวรรคและจัดรูปแบบ HTML เพื่อป้องกันปัญหาแสดงเป็นโค้ดดิบ
             card_html = f"""
             <div class="property-card">
                 <div class="card-title-row">
@@ -259,7 +306,7 @@ with col_list:
                 </div>
                 <div class="card-location">📍 {row['Amphoe']}, {row['Province']}</div>
                 <div class="card-divider"></div>
-                <div class="card-price">฿{row['Est_Land_Price']:,.0f}</div>
+                <div class="card-price">฿{row['Est_Land_Price']:,.0f} <span style="font-size: 16px; color: #888888; font-weight: normal;">/ตารางวา</span></div>
             </div>
             """
             st.markdown(card_html, unsafe_allow_html=True)
@@ -379,7 +426,7 @@ if not df_display.empty:
         fig.update_layout(
             title="เปรียบเทียบราคา vs ปัจจัยผลกระทบ", height=500,
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(family="Sarabun", size=14, color="white"),
+            font=dict(family="Sarabun", size=14, color="white"), # เปลี่ยนสีอักษรกราฟเป็นสีขาวให้เข้ากับ Dark Mode
             yaxis=dict(showgrid=True, gridcolor='#333'), xaxis=dict(showgrid=False),
             bargap=0.2, showlegend=False
         )
