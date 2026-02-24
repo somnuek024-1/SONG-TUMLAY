@@ -27,7 +27,13 @@ def get_coordinates(province_name):
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_csv("final_master_data_multiyear.csv")
+        # ✅ เปลี่ยนแค่ข้อมูลตรงนี้: โหลดไฟล์ฐานข้อมูลตัวใหม่ล่าสุด
+        df = pd.read_csv("final_master_data_tambon_price.csv")
+        
+        # ✅ ดึงเอาราคาประเมินตั้งต้นระดับจังหวัด มาให้สูตรคำนวณของเว็บทำงานต่อได้เหมือนเดิม
+        if 'Base_Land_Price_Prov' in df.columns:
+            df['Avg_Land_Price'] = df['Base_Land_Price_Prov']
+            
         if 'lat' not in df.columns or 'lon' not in df.columns:
             coords = df['Province'].apply(get_coordinates)
             df['lat'] = coords.apply(lambda x: x[0]) + np.random.normal(0, 0.02, size=len(df))
