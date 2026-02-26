@@ -11,7 +11,7 @@ apply_custom_style()
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_csv("final_master_data_multiyear.csv")
+        df = pd.read_csv("final_master_data_tambon_price.csv")
         latest_year = df['Year'].max()
         df_latest = df[df['Year'] == latest_year].copy()
         prov_pop_mean = df_latest.groupby('Province')['Total_Pop'].transform('mean').replace(0, 1)
@@ -202,3 +202,4 @@ if not df_show.empty:
                 st.markdown(card_html, unsafe_allow_html=True)
 else:
     st.info("ไม่พบข้อมูลในช่วงราคานี้ ลองปรับงบประมาณใหม่นะครับ")
+
