@@ -33,42 +33,23 @@ def get_hero_bg_css(fallback_url: str = "") -> str:
 def apply_custom_style():
     """เรียกครั้งเดียวในทุกหน้า — ฝัง CSS ทั้งหมด"""
 
-    # ── โลโก้: อ่านเป็น base64 เพื่อฝังใน CSS
-    # ใน Streamlit multipage app, stSidebarNav อยู่เหนือ sidebar content
-    # วิธีเดียวที่โลโก้จะอยู่เหนือ nav คือใส่เป็น CSS background-image
-    logo_b64 = ""
+    # ── โลโก้ ──
     logo_file = _find_file([
-        "logo.png",                       # ✅ ไฟล์ที่ user เตรียมไว้ (ไม่มีพื้นหลัง)
+        "logo.png",                       # ✅ ไฟล์หลักที่ไม่มีพื้นหลัง
         "logonobackgroundoriginal.png",
         "logonobackground.png",
         "logo.jpg",
     ])
-    if logo_file:
-        logo_b64 = _b64(logo_file)
 
-    # ── กำหนด CSS สำหรับโลโก้ (ถ้ามีไฟล์)
-    # ⚠️ สำคัญ: ต้องใช้ background-image และ background-color แยกกัน
-    #    ห้ามใช้ background shorthand เพราะจะ reset background-image ทิ้ง
-    if logo_b64:
-        logo_section_css = f"""
-            /* โลโก้อยู่เหนือ nav — ใช้ background-image บน stSidebarNav */
-            div[data-testid="stSidebarNav"] {{
-                background-image: url("data:image/png;base64,{logo_b64}") !important;
-                background-repeat: no-repeat !important;
-                background-position: center 24px !important;
-                background-size: 200px auto !important;
-                /* ✅ background-color แยก property — ไม่ทับ background-image */
-                background-color: #1A365D !important;
-                padding-top: 220px !important;
-                padding-bottom: 8px !important;
-            }}
-        """
-    else:
-        logo_section_css = """
-            div[data-testid="stSidebarNav"] {
-                background-color: #1A365D !important;
-                padding-bottom: 8px !important;
-            }
+    logo_css = ""
+    if logo_file:
+        b64 = _b64(logo_file)
+        logo_css = f"""
+            background-image: url("data:image/png;base64,{b64}");
+            background-repeat: no-repeat;
+            background-position: center top 20px;
+            background-size: 200px auto;
+            padding-top: 230px !important;
         """
 
     st.markdown(f"""
@@ -90,48 +71,33 @@ def apply_custom_style():
     [data-testid="stSidebar"] > div:first-child {{
         background: linear-gradient(180deg, #1A365D 0%, #0F2137 100%);
     }}
-
-    /* สีตัวอักษรใน Sidebar — ระบุ element เฉพาะ ไม่ใช้ * wildcard */
-    [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] a,
-    [data-testid="stSidebar"] li,
-    [data-testid="stSidebar"] h1,
-    [data-testid="stSidebar"] h2,
-    [data-testid="stSidebar"] h3,
-    [data-testid="stSidebar"] small,
-    [data-testid="stSidebar"] .stMarkdown {{
+    [data-testid="stSidebar"] * {{
         color: white !important;
     }}
 
-    /* ═══════════════════════════════════════
-       SIDEBAR NAV + LOGO
-    ═══════════════════════════════════════ */
-    {logo_section_css}
+    /* ── Logo + Nav ── */
+    div[data-testid="stSidebarNav"] {{
+        {logo_css}
+        background-color: #1A365D;
+    }}
 
-    /* ลบ background ออกจาก element ลูกใน nav (ไม่แตะ stSidebarNav เอง) */
+    /* ลบ background ออกจาก element ลูก ไม่ให้ทับรูปโลโก้ */
     div[data-testid="stSidebarNav"] ul,
-    div[data-testid="stSidebarNav"] li {{
+    div[data-testid="stSidebarNav"] li,
+    div[data-testid="stSidebarNav"] a,
+    div[data-testid="stSidebarNav"] span {{
         background-color: transparent !important;
     }}
-    div[data-testid="stSidebarNav"] a {{
-        background-color: transparent !important;
-        color: rgba(255,255,255,0.85) !important;
-    }}
+
     div[data-testid="stSidebarNav"] a:hover {{
         background-color: rgba(255,255,255,0.1) !important;
         border-radius: 8px;
-        color: white !important;
     }}
     div[data-testid="stSidebarNav"] a[aria-current="page"] {{
         background-color: rgba(255,255,255,0.18) !important;
         border-radius: 8px;
         font-weight: 700;
-        color: white !important;
     }}
-
-    /* Scale nav items */
     div[data-testid="stSidebarNav"] > ul {{
         transform: scale(1.05);
         transform-origin: top center;
@@ -169,6 +135,14 @@ def apply_custom_style():
     [data-testid="stSidebar"] div[data-baseweb="select"] > div {{
         background-color: rgba(255,255,255,0.08) !important;
         color: white !important;
+    }}
+
+    /* ═══════════════════════════════════════
+       TYPOGRAPHY
+    ═══════════════════════════════════════ */
+    .stMarkdown p, .stMarkdown li,
+    h1, h2, h3, label, p {{
+        color: #ffffff !important;
     }}
 
     /* ═══════════════════════════════════════
