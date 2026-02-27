@@ -69,7 +69,48 @@ def apply_custom_style():
     }}
     [data-testid="stSidebar"] * {{ color: white !important; }}
 
-    div[data-testid="stSidebarNav"] {{ {logo_css} }}
+    /* ── ทำให้ทุกส่วนใน Sidebar กลืนกับพื้นหลัง ── */
+    [data-testid="stSidebar"] section[data-testid="stSidebarContent"] {{
+        background: transparent !important;
+    }}
+
+    /* กล่อง Nav (โลโก้ + เมนู) */
+    div[data-testid="stSidebarNav"] {{
+        {logo_css}
+        background: linear-gradient(180deg, #1A365D 0%, #0F2137 100%) !important;
+    }}
+
+    /* ลบพื้นขาวออกจาก Nav container ทุก layer */
+    div[data-testid="stSidebarNav"] *,
+    div[data-testid="stSidebarNav"]::before,
+    div[data-testid="stSidebarNav"]::after {{
+        background-color: transparent !important;
+    }}
+
+    /* กล่องเมนูแต่ละ item */
+    div[data-testid="stSidebarNav"] ul li {{
+        background: transparent !important;
+    }}
+    div[data-testid="stSidebarNav"] ul li a {{
+        background: transparent !important;
+        color: white !important;
+    }}
+    div[data-testid="stSidebarNav"] ul li a:hover {{
+        background: rgba(255,255,255,0.12) !important;
+        border-radius: 8px;
+    }}
+
+    /* Active page highlight */
+    div[data-testid="stSidebarNav"] ul li a[aria-current="page"] {{
+        background: rgba(255,255,255,0.18) !important;
+        border-radius: 8px;
+    }}
+
+    /* เส้นคั่นระหว่าง nav กับ widget */
+    div[data-testid="stSidebarNav"] + div {{
+        background: transparent !important;
+    }}
+
     div[data-testid="stSidebarNav"] > ul {{
         transform: scale(1.06);
         transform-origin: top center;
@@ -125,4 +166,3 @@ def apply_custom_style():
     }}
     </style>
     """, unsafe_allow_html=True)
-
