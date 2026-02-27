@@ -9,12 +9,11 @@ import os
 
 def _b64(filepath: str) -> str:
     with open(filepath, "rb") as f:
-        return base64.b64encode(f.read()).decode()
+        return base64.b64encode(f.read()).decode("utf-8")
 
 
 def _mime_type(filepath: str) -> str:
-    """ตรวจ MIME type จาก header bytes จริง — ไม่ใช้นามสกุลไฟล์
-    เพราะบางไฟล์ตั้งชื่อ .png แต่จริงๆ เป็น JPEG"""
+    """ตรวจ MIME type จาก header bytes จริง — ไม่ใช้นามสกุลไฟล์"""
     with open(filepath, "rb") as f:
         header = f.read(8)
     if header[:2] == b'\xff\xd8':
@@ -58,13 +57,15 @@ def apply_custom_style():
     logo_css = ""
     if logo_file:
         b64  = _b64(logo_file)
-        mime = _mime_type(logo_file)   # ✅ ตรวจ MIME จาก bytes จริง ไม่ใช่นามสกุล
+        mime = _mime_type(logo_file)
         logo_css = f"""
             background-image: url("data:{mime};base64,{b64}");
             background-repeat: no-repeat;
             background-position: center top 20px;
-            background-size: 200px auto;
-            padding-top: 230px !important;
+            /* ✅ ขยายขนาดโลโก้ให้กว้าง 90% ของพื้นที่ Sidebar */
+            background-size: 90% auto; 
+            /* ✅ ดันเมนูลงมาอีกนิดเพื่อหลบโลโก้ที่ใหญ่ขึ้น */
+            padding-top: 260px !important; 
         """
 
     st.markdown(f"""
@@ -81,15 +82,15 @@ def apply_custom_style():
     header[data-testid="stHeader"]     {{ background-color: #1A2228; }}
 
     /* ═══════════════════════════════════════
-       SIDEBAR (บังคับให้เป็นสีน้ำเงินเข้มสีเดียวทั้งแผง)
+       SIDEBAR (สีน้ำเงินเข้มสีเดียวทั้งแผง)
     ═══════════════════════════════════════ */
     section[data-testid="stSidebar"] {{
-        background-color: #1A365D !important; /* กำหนดสีหลักที่นี่จุดเดียว */
+        background-color: #1A365D !important;
         border-right: none !important;
     }}
     
     section[data-testid="stSidebar"] > div {{
-        background-color: transparent !important; /* ลบสีพื้นหลังตัวลูกเพื่อให้โปร่งใสเห็นสีหลัก */
+        background-color: transparent !important;
     }}
 
     [data-testid="stSidebar"] * {{
@@ -99,7 +100,7 @@ def apply_custom_style():
     /* ── Logo + Nav ── */
     div[data-testid="stSidebarNav"] {{
         {logo_css}
-        background-color: transparent !important; /* ✅ แก้ไข: ลบการกำหนดสีพื้นหลังเดิมออก และเปลี่ยนเป็นแบบโปร่งใส */
+        background-color: transparent !important;
     }}
 
     /* ลบ background ออกจาก element ลูก ไม่ให้ทับรูปโลโก้ */
@@ -129,7 +130,6 @@ def apply_custom_style():
     /* ═══════════════════════════════════════
        WIDGETS
     ═══════════════════════════════════════ */
-    /* Dropdown */
     div[data-baseweb="select"] > div {{
         background-color: #262730 !important;
         color: white !important;
@@ -137,7 +137,6 @@ def apply_custom_style():
         border-radius: 8px !important;
     }}
 
-    /* Number Input */
     div[data-testid="stNumberInput"] input {{
         color: #ffffff !important;
         background-color: #262730 !important;
@@ -152,7 +151,6 @@ def apply_custom_style():
         color: white !important;
     }}
 
-    /* Sidebar dropdown */
     [data-testid="stSidebar"] div[data-baseweb="select"] > div {{
         background-color: rgba(255,255,255,0.08) !important;
         color: white !important;
@@ -178,9 +176,6 @@ def apply_custom_style():
         border: 1px solid rgba(0,0,0,0.06);
     }}
 
-    /* ═══════════════════════════════════════
-       DARK STAT BOX
-    ═══════════════════════════════════════ */
     .dark-stat-box {{
         background-color: #262730;
         border: 1px solid rgba(255,255,255,0.08);
