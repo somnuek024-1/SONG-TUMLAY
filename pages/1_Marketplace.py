@@ -198,33 +198,32 @@ if not df_show.empty:
                 grade = score_grade(item["Total_Score"])
                 clr   = score_color(item["Total_Score"])
                 # ป้ายรายได้ครัวเรือน
-                income_str = f"฿{item['Avg_Income']:,.0f}/เดือน"
+                income_str = f"฿{item['Avg_Income']:,.0f}/เดือน" if pd.notna(item['Avg_Income']) else ""
 
                 st.markdown(f"""
-                <div class="mk-card">
-                    <div style="display:flex;justify-content:space-between;
-                                align-items:flex-start;margin-bottom:6px;">
-                        <div class="mk-title">{item['Tambon']}</div>
-                        <div class="mk-badge">{item['Total_Score']:.1f}</div>
-                    </div>
-                    <div class="mk-location">📍 {item['Amphoe']}, {item['Province']}</div>
-                    <div style="display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
-                        <span style="background:{clr}22;color:{clr};border:1px solid {clr};
-                                     padding:2px 8px;border-radius:20px;font-size:11px;
-                                     font-weight:700;">เกรด {grade}</span>
-                        <span style="background:#1e2a35;color:#aaa;
-                                     padding:2px 8px;border-radius:20px;font-size:11px;">
-                            👥 {item['Total_Pop']:,} คน
-                        </span>
-                    </div>
-                    <div class="mk-footer">
-                        <div class="mk-price">
-                            ฿{item['Est_Land_Price']:,.0f}
-                            <span style="font-size:12px;color:#888;font-weight:400;">/ตร.ว.</span>
-                        </div>
-                        <div style="font-size:11px;color:#999;">{income_str}</div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+<div class="mk-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+        <div class="mk-title">{item['Tambon']}</div>
+        <div class="mk-badge">{item['Total_Score']:.1f}</div>
+    </div>
+    <div class="mk-location">📍 {item['Amphoe']}, {item['Province']}</div>
+    <div style="display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+        <span style="background:{clr}22;color:{clr};border:1px solid {clr};
+                     padding:2px 8px;border-radius:20px;font-size:11px;
+                     font-weight:700;">เกรด {grade}</span>
+        <span style="background:#1e2a35;color:#aaa;
+                     padding:2px 8px;border-radius:20px;font-size:11px;">
+            👥 {item['Total_Pop']:,} คน
+        </span>
+    </div>
+    <div class="mk-footer">
+        <div class="mk-price">
+            ฿{item['Est_Land_Price']:,.0f}
+            <span style="font-size:12px;color:#888;font-weight:400;">/ตร.ว.</span>
+        </div>
+        <div style="font-size:11px;color:#999;">{income_str}</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 else:
     st.info("ไม่พบข้อมูลในช่วงราคานี้ ลองปรับตัวกรองใหม่นะครับ 🙏")
