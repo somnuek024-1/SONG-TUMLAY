@@ -135,7 +135,6 @@ with col_map:
 
     if not df_display.empty:
         mc = MarkerCluster().add_to(m)
-        # ✅ itertuples เร็วกว่า iterrows ~4x
         for row in df_display.itertuples(index=False):
             if pd.notna(row.lat):
                 clr   = score_color(row.Total_Score)
@@ -215,59 +214,46 @@ with col_list:
             grade = score_grade(row.Total_Score)
             clr   = score_color(row.Total_Score)
             st.markdown(f"""
-            <div class="property-card">
-
-                <!-- บรรทัดที่ 1: อันดับ + ชื่อตำบล -->
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                    <div style="background:#1A365D;color:white;width:26px;height:26px;
-                                border-radius:50%;display:flex;align-items:center;
-                                justify-content:center;font-size:13px;font-weight:800;
-                                flex-shrink:0;">
-                        {rank}
-                    </div>
-                    <div style="font-weight:900;font-size:20px;color:#111;line-height:1.2;">
-                        {row.Tambon}
-                    </div>
-                </div>
-
-                <!-- บรรทัดที่ 2: ที่ตั้ง -->
-                <div style="font-size:14px;color:#666;margin-bottom:14px;
-                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                    📍 {row.Amphoe}, {row.Province}
-                </div>
-
-                <!-- กล่องคะแนน: ข้อความ + ตัวเลข + /10 บรรทัดเดียวกัน -->
-                <div style="background:linear-gradient(135deg,#1A365D,#2C5282);
-                            border-radius:12px;padding:12px 16px;margin-bottom:14px;
-                            display:flex;align-items:center;justify-content:space-between;">
-                    <div style="color:rgba(255,255,255,0.85);font-size:14px;font-weight:600;">
-                        คะแนนความน่าลงทุน
-                    </div>
-                    <div style="display:flex;align-items:baseline;gap:3px;">
-                        <span style="color:white;font-size:28px;font-weight:900;
-                                     line-height:1;">{row.Total_Score:.1f}</span>
-                        <span style="color:rgba(255,255,255,0.65);font-size:15px;
-                                     font-weight:600;">/10</span>
-                    </div>
-                </div>
-
-                <!-- ราคา + เกรด -->
-                <div style="border-top:1px dashed #eee;padding-top:12px;
-                            display:flex;justify-content:space-between;align-items:center;">
-                    <div style="color:#2ECC71;font-size:20px;font-weight:700;">
-                        ฿{row.Est_Land_Price:,.0f}
-                        <span style="font-size:13px;color:#888;font-weight:400;">/ตร.ว.</span>
-                    </div>
-                    <div style="background:{clr}22;color:{clr};
-                                border:2px solid {clr};padding:5px 16px;
-                                border-radius:20px;font-size:15px;font-weight:800;
-                                letter-spacing:0.5px;">
-                        เกรด {grade}
-                    </div>
-                </div>
-
-            </div>
-            """, unsafe_allow_html=True)
+<div class="property-card">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <div style="background:#1A365D;color:white;width:26px;height:26px;
+                    border-radius:50%;display:flex;align-items:center;
+                    justify-content:center;font-size:13px;font-weight:800;
+                    flex-shrink:0;">
+            {rank}
+        </div>
+        <div style="font-weight:900;font-size:20px;color:#111;line-height:1.2;">
+            {row.Tambon}
+        </div>
+    </div>
+    <div style="font-size:14px;color:#666;margin-bottom:14px;">
+        📍 {row.Amphoe}, {row.Province}
+    </div>
+    <div style="background:linear-gradient(135deg,#1A365D,#2C5282);
+                border-radius:12px;padding:12px 16px;margin-bottom:14px;
+                display:flex;align-items:center;justify-content:space-between;">
+        <div style="color:rgba(255,255,255,0.85);font-size:14px;font-weight:600;">
+            คะแนนความน่าลงทุน
+        </div>
+        <div style="display:flex;align-items:baseline;gap:3px;">
+            <span style="color:white;font-size:28px;font-weight:900;">{row.Total_Score:.1f}</span>
+            <span style="color:rgba(255,255,255,0.65);font-size:15px;">/10</span>
+        </div>
+    </div>
+    <div style="border-top:1px dashed #eee;padding-top:12px;
+                display:flex;justify-content:space-between;align-items:center;">
+        <div style="color:#2ECC71;font-size:20px;font-weight:700;">
+            ฿{row.Est_Land_Price:,.0f}
+            <span style="font-size:13px;color:#888;font-weight:400;">/ตร.ว.</span>
+        </div>
+        <div style="background:{clr}22;color:{clr};
+                    border:2px solid {clr};padding:5px 16px;
+                    border-radius:20px;font-size:15px;font-weight:800;">
+            เกรด {grade}
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
     else:
         st.warning("⚠️ ไม่พบข้อมูล")
 
@@ -297,55 +283,29 @@ if not df_display.empty:
 
     # ── Metric Cards ──
     st.markdown(f"""
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
-                gap:20px;margin-bottom:28px;">
-        <div style="background:#E3F2FD;border-radius:14px;padding:22px;position:relative;">
-            <div style="font-size:15px;font-weight:700;color:#555;">ราคาตั้งต้น (Base)</div>
-            <div style="font-size:30px;font-weight:900;color:#1565C0;margin:8px 0;">
-                ฿{base_price:,.0f}
-            </div>
-            <div style="font-size:45px;position:absolute;top:12px;right:16px;opacity:0.15;">🏷️</div>
-            <div style="font-size:12px;font-weight:700;color:#1565C0;
-                        border-top:1px solid rgba(21,101,192,0.2);padding-top:8px;">
-                ราคาประเมินกรมที่ดิน
-            </div>
-        </div>
-        <div style="background:#FFF3E0;border-radius:14px;padding:22px;position:relative;">
-            <div style="font-size:15px;font-weight:700;color:#555;">Density Factor</div>
-            <div style="font-size:30px;font-weight:900;color:#E65100;margin:8px 0;">
-                × {dens_fac:.2f}
-            </div>
-            <div style="font-size:45px;position:absolute;top:12px;right:16px;opacity:0.15;">👥</div>
-            <div style="font-size:12px;font-weight:700;color:#E65100;
-                        border-top:1px solid rgba(230,81,0,0.2);padding-top:8px;">
-                ปรับตามความหนาแน่นประชากร
-            </div>
-        </div>
-        <div style="background:#F3E5F5;border-radius:14px;padding:22px;position:relative;">
-            <div style="font-size:15px;font-weight:700;color:#555;">Location Factor</div>
-            <div style="font-size:30px;font-weight:900;color:#7B1FA2;margin:8px 0;">
-                × {cent_fac:.1f}
-            </div>
-            <div style="font-size:45px;position:absolute;top:12px;right:16px;opacity:0.15;">🏙️</div>
-            <div style="font-size:12px;font-weight:700;color:#7B1FA2;
-                        border-top:1px solid rgba(123,31,162,0.2);padding-top:8px;">
-                {"อำเภอเมือง/ศูนย์กลาง (+20%)" if cent_fac > 1.0 else "พื้นที่รอบนอก"}
-            </div>
-        </div>
-        <div style="background:#E8F5E9;border-radius:14px;padding:22px;
-                    border:2px solid #4CAF50;position:relative;">
-            <div style="font-size:15px;font-weight:700;color:#555;">ราคาประเมิน AI</div>
-            <div style="font-size:30px;font-weight:900;color:#2E7D32;margin:8px 0;">
-                ฿{final_price:,.0f}
-            </div>
-            <div style="font-size:45px;position:absolute;top:12px;right:16px;opacity:0.3;">💰</div>
-            <div style="font-size:12px;font-weight:700;color:#2E7D32;
-                        border-top:1px solid rgba(46,125,50,0.2);padding-top:8px;">
-                ราคาสรุปหลังปรับปัจจัยแล้ว
-            </div>
-        </div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:20px;margin-bottom:28px;">
+    <div style="background:#E3F2FD;border-radius:14px;padding:22px;position:relative;">
+        <div style="font-size:15px;font-weight:700;color:#555;">ราคาตั้งต้น (Base)</div>
+        <div style="font-size:30px;font-weight:900;color:#1565C0;margin:8px 0;">฿{base_price:,.0f}</div>
+        <div style="font-size:12px;font-weight:700;color:#1565C0;border-top:1px solid rgba(21,101,192,0.2);padding-top:8px;">ราคาประเมินกรมที่ดิน</div>
     </div>
-    """, unsafe_allow_html=True)
+    <div style="background:#FFF3E0;border-radius:14px;padding:22px;position:relative;">
+        <div style="font-size:15px;font-weight:700;color:#555;">Density Factor</div>
+        <div style="font-size:30px;font-weight:900;color:#E65100;margin:8px 0;">× {dens_fac:.2f}</div>
+        <div style="font-size:12px;font-weight:700;color:#E65100;border-top:1px solid rgba(230,81,0,0.2);padding-top:8px;">ปรับตามความหนาแน่นประชากร</div>
+    </div>
+    <div style="background:#F3E5F5;border-radius:14px;padding:22px;position:relative;">
+        <div style="font-size:15px;font-weight:700;color:#555;">Location Factor</div>
+        <div style="font-size:30px;font-weight:900;color:#7B1FA2;margin:8px 0;">× {cent_fac:.1f}</div>
+        <div style="font-size:12px;font-weight:700;color:#7B1FA2;border-top:1px solid rgba(123,31,162,0.2);padding-top:8px;">{"อำเภอเมือง/ศูนย์กลาง (+20%)" if cent_fac > 1.0 else "พื้นที่รอบนอก"}</div>
+    </div>
+    <div style="background:#E8F5E9;border-radius:14px;padding:22px;border:2px solid #4CAF50;position:relative;">
+        <div style="font-size:15px;font-weight:700;color:#555;">ราคาประเมิน AI</div>
+        <div style="font-size:30px;font-weight:900;color:#2E7D32;margin:8px 0;">฿{final_price:,.0f}</div>
+        <div style="font-size:12px;font-weight:700;color:#2E7D32;border-top:1px solid rgba(46,125,50,0.2);padding-top:8px;">ราคาสรุปหลังปรับปัจจัยแล้ว</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
     # ── Factor Analysis ──
     st.markdown("#### 📊 วิเคราะห์ปัจจัย")
