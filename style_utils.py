@@ -35,10 +35,11 @@ def apply_custom_style():
 
     # ✅ แสดงโลโก้ผ่าน st.sidebar.image() แทน CSS background-image
     # วิธีนี้เสถียรกว่ามาก ไม่โดน Streamlit override
+    # ✅ logo.png คือไฟล์ที่ไม่มีพื้นหลัง — ขึ้นก่อนเสมอ
     logo_file = _find_file([
+        "logo.png",
         "logonobackgroundoriginal.png",
         "logonobackground.png",
-        "logo.png",
         "logo.jpg",
     ])
     if logo_file:
@@ -83,11 +84,16 @@ def apply_custom_style():
 
     /* โลโก้ที่แสดงผ่าน st.sidebar.image() */
     [data-testid="stSidebar"] [data-testid="stImage"] {
-        background-color: #1A365D !important;
-        padding: 16px 24px 4px 24px !important;
+        background: transparent !important;
+        padding: 24px 28px 16px 28px !important;
     }
     [data-testid="stSidebar"] [data-testid="stImage"] img {
         border-radius: 0 !important;
+        display: block;
+    }
+    /* กำจัด margin/padding รอบๆ image widget */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:first-child {
+        background: transparent !important;
     }
 
     /* ── Sidebar Nav (กล่องเมนู) ── */
