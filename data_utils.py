@@ -1,94 +1,98 @@
-"""
-data_utils.py — Single Source of Truth สำหรับทุกหน้า
-ทุกการโหลดและคำนวณข้อมูลอยู่ที่นี่ที่เดียว
-"""
-
 import pandas as pd
 import numpy as np
 import streamlit as st
 
-DATA_FILE = "final_master_data_tambon_price.csv"
+CSV_FILE = "final_master_data_tambon_price.csv"
 
-
-# ─────────────────────────────────────────────────
-# LOAD
-# ─────────────────────────────────────────────────
-@st.cache_data(show_spinner=False)
-def load_raw_data() -> pd.DataFrame:
+@st.cache_data
+def load_and_process() -> pd.DataFrame:
+    """
+    โหลดและประมวลผลข้อมูลครั้งเดียว แชร์ใช้ทุกหน้า
+    แก้ไข:
+      - ชื่อไฟล์ CSV รวมไว้ที่เดียว
+      - คำนวณ factors / score จากข้อมูลทั้งหมด (global max) ให้คะแนนสอดคล้องกันทุกหน้า
+      - lat/lon ใช้ค่าจริงจาก CSV ไม่สุ่ม noise
+    """
     try:
-        df = pd.read_csv(DATA_FILE)
-        df.columns = df.columns.str.lstrip("\ufeff").str.strip()
-        return df
+        df = pd.read_csv(CSV_FILE)
     except FileNotFoundError:
-        st.error(f"❌ ไม่พบไฟล์ '{DATA_FILE}' — กรุณาวางไฟล์ในโฟลเดอร์เดียวกับแอป")
+        st.error(f"❌ ไม่พบไฟล์ {CSV_FILE} กรุณาตรวจสอบ path")
         return pd.DataFrame()
 
+    # ใช้ข้อมูลปีล่าสุด
+    latest_year = df["Year"].max()
+    df = df[df["Year"] == latest_year].copy()
 
-# ─────────────────────────────────────────────────
-# COMPUTE  (สูตรทั้งหมดอยู่ที่นี่ที่เดียว)
-# ─────────────────────────────────────────────────
-@st.cache_data(show_spinner=False)
-def compute_scores(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    คำนวณ Factor และ Score — แก้สูตรที่นี่ที่เดียว มีผลทุกหน้า
+    # --- ราคาฐาน ---
+    if "Base_Land_Price_Prov" in df.columns:
+        df["Avg_Land_Price"] = df["Base_Land_Price_Prov"]
 
-    Factor_Density    = (ประชากรตำบล / ค่าเฉลี่ยประชากรจังหวัด) ^ 0.3
-    Factor_Centrality = 1.2 ถ้าอำเภอเมือง/เขต, 1.0 อื่นๆ
-    Factor_Total      = Density x Centrality  (clip 0.5-3.0)
-    Est_Land_Price    = Avg_Land_Price x Factor_Total
-    Total_Score       = (Income/Max*3) + (Land/Max*2) + (Pop/Max*5)  → 0-10
-    """
-    if df.empty:
-        return df.copy()
-
-    out = df.copy()
-
-    prov_mean = out.groupby("Province")["Total_Pop"].transform("mean").replace(0, 1)
-    out["Factor_Density"] = np.power((out["Total_Pop"] / prov_mean).clip(lower=0), 0.3)
-    out["Factor_Centrality"] = out["Amphoe"].apply(
-        lambda x: 1.2 if ("เมือง" in str(x) or "เขต" in str(x)) else 1.0
+    # --- Factor: Density (ความหนาแน่นประชากรเทียบระดับจังหวัด) ---
+    prov_pop_mean = (
+        df.groupby("Province")["Total_Pop"]
+        .transform("mean")
+        .replace(0, 1)
     )
-    out["Factor_Total"] = (out["Factor_Density"] * out["Factor_Centrality"]).clip(0.5, 3.0)
-    out["Est_Land_Price"] = (out["Avg_Land_Price"] * out["Factor_Total"]).round(2)
+    pop_ratio = df["Total_Pop"] / prov_pop_mean
+    df["Factor_Density"] = np.power(pop_ratio, 0.3).clip(0.5, 2.0)
 
-    max_inc  = out["Avg_Income"].max()     or 1
-    max_land = out["Est_Land_Price"].max() or 1
-    max_pop  = out["Total_Pop"].max()      or 1
+    # --- Factor: Centrality (โซนอำเภอ) แบบ 3 ระดับ ---
+    def centrality_score(amphoe: str) -> float:
+        a = str(amphoe)
+        if "เมือง" in a or "เขต" in a:
+            return 1.2  # ศูนย์กลาง
+        secondary_keywords = ["บางรัก", "ห้วยขวาง", "ลาดกระบัง", "มีนบุรี",
+                              "บึงกุ่ม", "สาทร", "บางนา", "คลอง"]
+        if any(kw in a for kw in secondary_keywords):
+            return 1.1  # อำเภอรอง
+        return 1.0      # รอบนอก
 
-    out["Total_Score"] = (
-        (out["Avg_Income"]     / max_inc  * 3) +
-        (out["Est_Land_Price"] / max_land * 2) +
-        (out["Total_Pop"]      / max_pop  * 5)
-    ).round(2).clip(0, 10)
+    df["Factor_Centrality"] = df["Amphoe"].apply(centrality_score)
+    df["Factor_Total"] = (df["Factor_Density"] * df["Factor_Centrality"]).clip(0.5, 3.0)
+    df["Est_Land_Price"] = df["Avg_Land_Price"] * df["Factor_Total"]
 
+    # --- Total Score (normalize จาก global max เสมอ ไม่ขึ้นกับ filter) ---
+    max_inc  = df["Avg_Income"].max() or 1
+    max_land = df["Est_Land_Price"].max() or 1
+    max_pop  = df["Total_Pop"].max() or 1
+
+    df["Total_Score"] = (
+        (df["Avg_Income"]     / max_inc  * 3) +
+        (df["Est_Land_Price"] / max_land * 2) +
+        (df["Total_Pop"]      / max_pop  * 5)
+    ).round(2)
+
+    # --- lat/lon: ใช้ค่าจริงจากไฟล์เท่านั้น ไม่ random noise ---
+    if "lat" not in df.columns or "lon" not in df.columns:
+        PROVINCE_COORDS = {
+            "กรุงเทพมหานคร": [13.7563, 100.5018], "เชียงใหม่": [18.7883, 98.9853],
+            "ขอนแก่น": [16.4322, 102.8236], "ภูเก็ต": [7.8804, 98.3923],
+            "นครราชสีมา": [14.9799, 102.0978], "ชลบุรี": [13.3611, 100.9847],
+            "สงขลา": [7.1988, 100.5951], "อุดรธานี": [17.4138, 102.7872],
+            "ระยอง": [12.6815, 101.2816], "พระนครศรีอยุธยา": [14.3532, 100.5684],
+            "สุราษฎร์ธานี": [9.1382, 99.3217], "เชียงราย": [19.9105, 99.8406],
+            "อุบลราชธานี": [15.2448, 104.8473], "พิษณุโลก": [16.8211, 100.2659],
+            "กาญจนบุรี": [14.0225, 99.5327],
+        }
+        coords = df["Province"].apply(lambda p: PROVINCE_COORDS.get(p, [13.7563, 100.5018]))
+        df["lat"] = coords.apply(lambda c: c[0])
+        df["lon"] = coords.apply(lambda c: c[1])
+
+    return df
+
+
+def filter_df(
+    df: pd.DataFrame,
+    province: str = "ทั้งหมด",
+    amphoe: str = "ทั้งหมด",
+    price_min: float = 0,
+    price_max: float = float("inf"),
+) -> pd.DataFrame:
+    """Helper กรองข้อมูลตาม filter ที่ผู้ใช้เลือก"""
+    out = df.copy()
+    out = out[(out["Est_Land_Price"] >= price_min) & (out["Est_Land_Price"] <= price_max)]
+    if province != "ทั้งหมด":
+        out = out[out["Province"] == province]
+    if amphoe != "ทั้งหมด":
+        out = out[out["Amphoe"] == amphoe]
     return out
-
-
-@st.cache_data(show_spinner=False)
-def get_latest_data() -> pd.DataFrame:
-    """ข้อมูลปีล่าสุด + คะแนนครบ"""
-    df = compute_scores(load_raw_data())
-    if df.empty:
-        return df
-    return df[df["Year"] == df["Year"].max()].copy()
-
-
-@st.cache_data(show_spinner=False)
-def get_all_years_data() -> pd.DataFrame:
-    """ข้อมูลทุกปี + คะแนน"""
-    return compute_scores(load_raw_data())
-
-
-# ─────────────────────────────────────────────────
-# HELPERS
-# ─────────────────────────────────────────────────
-def score_color(score: float) -> str:
-    if score >= 6:  return "#2ECC71"
-    if score >= 3:  return "#F1C40F"
-    return "#E74C3C"
-
-
-def score_grade(score: float) -> str:
-    if score >= 6:  return "A"
-    if score >= 3:  return "B"
-    return "C"
