@@ -1,439 +1,386 @@
+"""
+home.py — หน้าหลัก: แผนที่ + Top5 + Price Breakdown
+"""
+
 import streamlit as st
 import pandas as pd
 import folium
 from streamlit_folium import st_folium
 from folium.plugins import MarkerCluster
-import numpy as np
-import plotly.express as px
 import plotly.graph_objects as go
-from style_utils import apply_custom_style
 
-# --- 1. Config ---
-st.set_page_config(page_title="SONGTUMLAY Pro", layout="wide", page_icon="🏙️")
+from style_utils import apply_custom_style, get_hero_bg_css
+from data_utils import get_latest_data, score_color, score_grade
+
+# ─────────────────────────────────────────
+# CONFIG
+# ─────────────────────────────────────────
+st.set_page_config(
+    page_title="SongTumLay — ส่องทำเล",
+    layout="wide",
+    page_icon="🏙️",
+    initial_sidebar_state="expanded",
+)
 apply_custom_style()
 
-# --- 2. Helper Functions & Data ---
-def get_coordinates(province_name):
-    coords = {
-        "เชียงใหม่": [18.7883, 98.9853], "ขอนแก่น": [16.4322, 102.8236], "ภูเก็ต": [7.8804, 98.3923], 
-        "กรุงเทพมหานคร": [13.7563, 100.5018], "นครราชสีมา": [14.9799, 102.0978], "ชลบุรี": [13.3611, 100.9847],
-        "สงขลา": [7.1988, 100.5951], "อุดรธานี": [17.4138, 102.7872], "ประจวบคีรีขันธ์": [11.8124, 99.7973], 
-        "ระยอง": [12.6815, 101.2816], "พระนครศรีอยุธยา": [14.3532, 100.5684], "สุราษฎร์ธานี": [9.1382, 99.3217],
-        "เชียงราย": [19.9105, 99.8406], "อุบลราชธานี": [15.2448, 104.8473], "พิษณุโลก": [16.8211, 100.2659], 
-        "กาญจนบุรี": [14.0225, 99.5327]
-    }
-    return coords.get(province_name, [13.7563, 100.5018])
+# ─────────────────────────────────────────
+# โหลดข้อมูล (จาก final_master_data_tambon_price.csv)
+# ─────────────────────────────────────────
+with st.spinner("🔄 กำลังโหลดข้อมูล..."):
+    df_view = get_latest_data()
 
-@st.cache_data
-def load_data():
-    try:
-        # ✅ เปลี่ยนแค่ข้อมูลตรงนี้: โหลดไฟล์ฐานข้อมูลตัวใหม่ล่าสุด
-        df = pd.read_csv("final_master_data_tambon_price.csv")
-        
-        # ✅ ดึงเอาราคาประเมินตั้งต้นระดับจังหวัด มาให้สูตรคำนวณของเว็บทำงานต่อได้เหมือนเดิม
-        if 'Base_Land_Price_Prov' in df.columns:
-            df['Avg_Land_Price'] = df['Base_Land_Price_Prov']
-            
-        if 'lat' not in df.columns or 'lon' not in df.columns:
-            coords = df['Province'].apply(get_coordinates)
-            df['lat'] = coords.apply(lambda x: x[0]) + np.random.normal(0, 0.02, size=len(df))
-            df['lon'] = coords.apply(lambda x: x[1]) + np.random.normal(0, 0.02, size=len(df))
-        return df
-    except FileNotFoundError: return pd.DataFrame()
+latest_year = int(df_view["Year"].max()) if not df_view.empty else 0
 
-df_all_years = load_data()
-
-@st.cache_data
-def process_latest_view(df):
-    if df.empty: return pd.DataFrame(), "N/A"
-    latest_year = df['Year'].max()
-    df_latest = df[df['Year'] == latest_year].copy()
-    
-    prov_pop_mean = df_latest.groupby('Province')['Total_Pop'].transform('mean').replace(0, 1)
-    pop_ratio = df_latest['Total_Pop'] / prov_pop_mean
-    df_latest['Factor_Density'] = np.power(pop_ratio, 0.3)
-    df_latest['Factor_Centrality'] = df_latest['Amphoe'].apply(lambda x: 1.2 if ('เมือง' in str(x) or 'เขต' in str(x)) else 1.0)
-    df_latest['Factor_Total'] = (df_latest['Factor_Density'] * df_latest['Factor_Centrality']).clip(0.5, 3.0)
-    df_latest['Est_Land_Price'] = df_latest['Avg_Land_Price'] * df_latest['Factor_Total']
-    
-    max_inc = df_latest['Avg_Income'].max() or 1
-    max_land = df_latest['Est_Land_Price'].max() or 1
-    max_pop = df_latest['Total_Pop'].max() or 1
-    df_latest['Total_Score'] = ((df_latest['Avg_Income']/max_inc * 3) + (df_latest['Est_Land_Price']/max_land * 2) + (df_latest['Total_Pop']/max_pop * 5)).round(1)
-    
-    return df_latest, str(latest_year)
-
-if not df_all_years.empty:
-    df_view, latest_year_str = process_latest_view(df_all_years)
-else:
-    df_view = pd.DataFrame()
-    latest_year_str = "N/A"
-
-# --- CSS Styling สำหรับหน้า Home ---
-st.markdown("""
-<style>
-    /* พื้นหลังหลักสี Dark Theme */
-    [data-testid="stAppViewContainer"] {
-        background-color: #1A2228;
-        color: white;
-    }
-    
-    /* Header สีเดียวกับพื้นหลัง */
-    header[data-testid="stHeader"] {
-        background-color: #1A2228;
-    }
-    
-    /* บังคับตัวอักษรเป็นสีขาว */
-    .stMarkdown, p, h1, h2, h3 {
-        color: #ffffff !important;
-    }
-
-    /* Style ของกล่องตัวเลือกจังหวัด/อำเภอ */
-    div[data-baseweb="select"] > div {
-        background-color: #262730 !important;
-        color: white !important;
-        border-color: rgba(255,255,255,0.2) !important;
-    }
-
-    /* บังคับช่องกรอกตัวเลข (Number Input) ให้เข้ากับ Dark Theme */
-    div[data-testid="stNumberInput"] input {
-        color: #ffffff !important;
-        background-color: #262730 !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 4px;
-        -webkit-text-fill-color: #ffffff !important;
-        caret-color: #ffffff !important;
-    }
-
-    /* Style ให้กับ property-card ใหม่ */
-    .property-card {
-        background-color: #ffffff;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        border: 1px solid rgba(128, 128, 128, 0.2);
-    }
-    
-    .card-title-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-    }
-
-    .card-title-text {
-        font-weight: 800;
-        font-size: 20px;
-        color: #000000 !important;
-    }
-
-    /* ปรับแต่งกล่องคะแนนให้ใหญ่ขึ้น */
-    .score-badge {
-        background-color: #1A365D;
-        color: white !important;
-        padding: 8px 18px; 
-        border-radius: 8px;
-        font-size: 22px; 
-        font-weight: 900;
-    }
-
-    .card-location {
-        font-size: 14px;
-        color: #666666 !important;
-        margin-bottom: 15px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .card-divider {
-        border-top: 1px dashed #ddd;
-        margin: 15px 0;
-    }
-
-    .card-price {
-        font-weight: bold;
-        color: #2ECC71 !important;
-        font-size: 24px;
-    }
-
-</style>
-""", unsafe_allow_html=True)
-
-# --- 3. Sidebar Inputs ---
+# ─────────────────────────────────────────
+# SIDEBAR
+# ─────────────────────────────────────────
 st.sidebar.markdown("### 🔍 ค้นหาพื้นที่")
 
+# ✅ ป้องกัน NameError — กำหนดค่า default ก่อนเสมอ
+min_price = max_price = 0
+price_range = (0, 0)
+
 if not df_view.empty:
-    min_p = int(df_view['Est_Land_Price'].min())
-    max_p = int(df_view['Est_Land_Price'].max())
-    
-    st.sidebar.write("💰 **งบประมาณ (ทุน)**")
-    
-    col_min, col_max = st.sidebar.columns(2)
-    with col_min:
-        min_input = st.number_input("ต่ำสุด (Min)", min_value=0, max_value=max_p, value=min_p, step=50000)
-    with col_max:
-        max_input = st.number_input("สูงสุด (Max)", min_value=0, max_value=max_p, value=max_p, step=50000)
-    
-    price_range = (min_input, max_input)
-else:
-    price_range = (0, 0)
+    min_price = int(df_view["Est_Land_Price"].min())
+    max_price = int(df_view["Est_Land_Price"].max())
 
-provinces = ["ทั้งหมด"] + sorted(list(df_all_years['Province'].unique())) if not df_all_years.empty else []
-selected_prov = st.sidebar.selectbox("📍 จังหวัด", provinces)
+    st.sidebar.write("💰 **งบประมาณ (บาท/ตร.ว.)**")
+    # ✅ ใช้ slider range เดียว UX ดีกว่า 2 กล่อง
+    price_range = st.sidebar.slider(
+        "ช่วงราคา",
+        min_value=min_price,
+        max_value=max_price,
+        value=(min_price, max_price),
+        step=1_000,
+        format="฿%d",
+        label_visibility="collapsed",
+    )
+    st.sidebar.caption(f"฿{price_range[0]:,} — ฿{price_range[1]:,}")
+
+provinces = (
+    ["ทั้งหมด"] + sorted(df_view["Province"].unique().tolist())
+    if not df_view.empty else ["ทั้งหมด"]
+)
+sel_prov = st.sidebar.selectbox("📍 จังหวัด", provinces)
+
 amphoes = ["ทั้งหมด"]
-if selected_prov != "ทั้งหมด":
-    amphoes += sorted(df_all_years[df_all_years['Province'] == selected_prov]['Amphoe'].unique())
-selected_amphoe = st.sidebar.selectbox("🏙️ อำเภอ/เขต", amphoes)
-st.sidebar.caption("© 2024 SongTumLay Pro")
+if sel_prov != "ทั้งหมด" and not df_view.empty:
+    amphoes += sorted(
+        df_view[df_view["Province"] == sel_prov]["Amphoe"].unique().tolist()
+    )
+sel_amphoe = st.sidebar.selectbox("🏙️ อำเภอ/เขต", amphoes)
 
-# --- 4. Main Content ---
+st.sidebar.markdown("---")
+st.sidebar.caption(f"📅 ข้อมูลล่าสุด ปี พ.ศ. {latest_year}")
+st.sidebar.caption("© 2024 SongTumLay — ส่องทำเล")
 
-df_display = df_view.copy()
+# ─────────────────────────────────────────
+# FILTER
+# ─────────────────────────────────────────
+df_display = pd.DataFrame()
+if not df_view.empty:
+    df_display = df_view[
+        (df_view["Est_Land_Price"] >= price_range[0]) &
+        (df_view["Est_Land_Price"] <= price_range[1])
+    ].copy()
+    if sel_prov   != "ทั้งหมด": df_display = df_display[df_display["Province"] == sel_prov]
+    if sel_amphoe != "ทั้งหมด": df_display = df_display[df_display["Amphoe"]   == sel_amphoe]
 
-if not df_display.empty:
-    df_display = df_display[
-        (df_display['Est_Land_Price'] >= price_range[0]) & 
-        (df_display['Est_Land_Price'] <= price_range[1])
-    ]
+# ─────────────────────────────────────────
+# HERO BANNER
+# ─────────────────────────────────────────
+subtitle = f"พื้นที่: {sel_prov}" if sel_prov != "ทั้งหมด" else "ภาพรวมประเทศไทย 77 จังหวัด"
+if price_range != (min_price, max_price):
+    subtitle += f"  •  ฿{price_range[0]:,} – ฿{price_range[1]:,}"
 
-if selected_prov != "ทั้งหมด": df_display = df_display[df_display['Province'] == selected_prov]
-if selected_amphoe != "ทั้งหมด": df_display = df_display[df_display['Amphoe'] == selected_amphoe]
-
-subtitle_text = f"พื้นที่: {selected_prov}" if selected_prov != 'ทั้งหมด' else "ภาพรวมประเทศไทย"
-if price_range[0] > min_p or price_range[1] < max_p:
-    subtitle_text += f" (งบ: ฿{price_range[0]:,.0f} - ฿{price_range[1]:,.0f})"
+hero_bg = get_hero_bg_css(
+    "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2613&auto=format&fit=crop"
+)
 
 st.markdown(f"""
 <div style="
-    background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2613&auto=format&fit=crop');
-    background-size: cover;
-    background-position: center;
-    padding: 50px 20px;
-    border-radius: 12px;
-    text-align: center;
-    margin-bottom: 25px;
-    color: white;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    background-image: linear-gradient(rgba(0,0,0,0.65),rgba(0,0,0,0.65)), {hero_bg};
+    background-size:cover; background-position:center;
+    padding:55px 20px; border-radius:14px; text-align:center;
+    margin-bottom:28px; color:white;
+    box-shadow:0 8px 30px rgba(0,0,0,0.4);
 ">
-    <div style="font-size: 48px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">
-        แผนที่วิเคราะห์ทำเล
+    <div style="font-size:52px;font-weight:900;letter-spacing:2px;margin-bottom:8px;">
+        🏙️ แผนที่วิเคราะห์ทำเล
     </div>
-    <div style="font-size: 18px; font-weight: 300; opacity: 0.9;">
-        {subtitle_text}
-    </div>
+    <div style="font-size:18px;opacity:0.85;">{subtitle}</div>
 </div>
 """, unsafe_allow_html=True)
 
+# ─────────────────────────────────────────
+# MAP  +  TOP-5 LIST
+# ─────────────────────────────────────────
 col_map, col_list = st.columns([2, 1.2])
 
 with col_map:
-    center = [13.7563, 100.5018]
-    zoom = 6
+    # ── Folium Map ──
     if not df_display.empty:
-        center = [df_display['lat'].mean(), df_display['lon'].mean()]
-        zoom = 10 if selected_amphoe == "ทั้งหมด" else 11
-        
+        center = [df_display["lat"].mean(), df_display["lon"].mean()]
+        zoom   = 6 if sel_prov == "ทั้งหมด" else (10 if sel_amphoe == "ทั้งหมด" else 12)
+    else:
+        center, zoom = [13.7563, 100.5018], 6
+
     m = folium.Map(location=center, zoom_start=zoom, tiles="CartoDB positron")
-    
+
     if not df_display.empty:
         mc = MarkerCluster().add_to(m)
-        for _, row in df_display.iterrows():
-            if pd.notna(row['lat']):
-                color = '#2ECC71' if row['Total_Score'] >= 6 else ('#F1C40F' if row['Total_Score'] >= 3 else '#E74C3C')
+        # ✅ itertuples เร็วกว่า iterrows ~4x
+        for row in df_display.itertuples(index=False):
+            if pd.notna(row.lat):
+                clr   = score_color(row.Total_Score)
+                grade = score_grade(row.Total_Score)
+                popup = (
+                    f"<div style='font-family:sans-serif;min-width:160px;'>"
+                    f"<b style='font-size:15px'>{row.Tambon}</b><br>"
+                    f"<span style='color:#666'>{row.Amphoe}, {row.Province}</span>"
+                    f"<hr style='margin:6px 0'>"
+                    f"💰 <b>฿{row.Est_Land_Price:,.0f}</b>/ตร.ว.<br>"
+                    f"👥 ประชากร {row.Total_Pop:,} คน<br>"
+                    f"🏅 เกรด <b style='color:{clr}'>{grade}</b> ({row.Total_Score:.1f}/10)"
+                    f"</div>"
+                )
                 folium.CircleMarker(
-                    [row['lat'], row['lon']], radius=6, color=color, fill=True, fill_color=color, fill_opacity=0.9,
-                    popup=f"<b>{row['Tambon']}</b><br>฿{row['Est_Land_Price']:,.0f}", tooltip=row['Tambon']
+                    location=[row.lat, row.lon],
+                    radius=6, color=clr,
+                    fill=True, fill_color=clr, fill_opacity=0.9,
+                    popup=folium.Popup(popup, max_width=230),
+                    tooltip=f"{row.Tambon} — ฿{row.Est_Land_Price:,.0f}",
                 ).add_to(mc)
-    
-    # ความสูงแผนที่คงไว้ที่ 500
-    st_folium(m, height=500, use_container_width=True)
 
-    # ✅ --- เพิ่ม ข้อ 1: สถิติภาพรวม ---
+    st_folium(m, height=480, use_container_width=True)
+
+    # ── Summary Stats ──
     if not df_display.empty:
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 📊 สรุปสถิติภาพรวมพื้นที่")
-        
+        st.markdown("### 📊 สรุปสถิติพื้นที่")
         c1, c2, c3 = st.columns(3)
-        with c1:
-            st.markdown(f"""<div style="background-color:#262730; padding:15px; border-radius:10px; text-align:center;">
-                <div style="font-size:14px; color:#aaa;">ราคาเฉลี่ย (ตร.ว.)</div>
-                <div style="font-size:24px; font-weight:bold; color:#2ECC71;">฿{df_display['Est_Land_Price'].mean():,.0f}</div>
-            </div>""", unsafe_allow_html=True)
-        with c2:
-            st.markdown(f"""<div style="background-color:#262730; padding:15px; border-radius:10px; text-align:center;">
-                <div style="font-size:14px; color:#aaa;">คะแนนเฉลี่ย</div>
-                <div style="font-size:24px; font-weight:bold; color:#3498DB;">{df_display['Total_Score'].mean():.1f} / 10</div>
-            </div>""", unsafe_allow_html=True)
-        with c3:
-            st.markdown(f"""<div style="background-color:#262730; padding:15px; border-radius:10px; text-align:center;">
-                <div style="font-size:14px; color:#aaa;">จำนวนพื้นที่ในโซนนี้</div>
-                <div style="font-size:24px; font-weight:bold; color:#F1C40F;">{len(df_display)} แห่ง</div>
-            </div>""", unsafe_allow_html=True)
+        for col, label, val, clr in [
+            (c1, "ราคาเฉลี่ย (ตร.ว.)",  f"฿{df_display['Est_Land_Price'].mean():,.0f}", "#2ECC71"),
+            (c2, "คะแนนเฉลี่ย",          f"{df_display['Total_Score'].mean():.1f} / 10",  "#3498DB"),
+            (c3, "จำนวนพื้นที่",          f"{len(df_display):,} แห่ง",                   "#F1C40F"),
+        ]:
+            with col:
+                st.markdown(f"""
+                <div class="dark-stat-box">
+                    <div style="font-size:13px;color:#aaa;margin-bottom:6px;">{label}</div>
+                    <div style="font-size:26px;font-weight:900;color:{clr};">{val}</div>
+                </div>""", unsafe_allow_html=True)
 
-        # ✅ --- เพิ่ม ข้อ 3: คำอธิบายสัญลักษณ์ (Map Legend) ---
+        # ── Map Legend ──
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("""
-        <div style="background-color: #262730; padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-weight: 800; font-size: 16px; margin-bottom: 15px; color: white;">📍 คำอธิบายสัญลักษณ์ (Map Legend)</div>
-            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #2ECC71; box-shadow: 0 0 8px #2ECC71;"></div>
-                    <span style="color: white; font-size: 15px;">ทำเลเกรด A (คะแนน 6 - 10)</span>
+        <div style="background:#262730;padding:18px;border-radius:12px;
+                    border:1px solid rgba(255,255,255,0.08);">
+            <div style="font-weight:800;font-size:15px;margin-bottom:12px;color:white;">
+                📍 คำอธิบายสัญลักษณ์
+            </div>
+            <div style="display:flex;gap:24px;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:16px;height:16px;border-radius:50%;
+                                background:#2ECC71;box-shadow:0 0 8px #2ECC71;"></div>
+                    <span style="color:white;">เกรด A (6–10)</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #F1C40F; box-shadow: 0 0 8px #F1C40F;"></div>
-                    <span style="color: white; font-size: 15px;">ทำเลเกรด B (คะแนน 3 - 5.9)</span>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:16px;height:16px;border-radius:50%;
+                                background:#F1C40F;box-shadow:0 0 8px #F1C40F;"></div>
+                    <span style="color:white;">เกรด B (3–5.9)</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #E74C3C; box-shadow: 0 0 8px #E74C3C;"></div>
-                    <span style="color: white; font-size: 15px;">ทำเลเกรด C (คะแนน < 3)</span>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:16px;height:16px;border-radius:50%;
+                                background:#E74C3C;box-shadow:0 0 8px #E74C3C;"></div>
+                    <span style="color:white;">เกรด C (&lt;3)</span>
                 </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
+    else:
+        st.warning("⚠️ ไม่พบข้อมูลในช่วงราคานี้ กรุณาปรับตัวกรอง")
 
 with col_list:
-    st.subheader("🏆 รายการ (Top 5)")
+    st.markdown("### 🏆 Top 5 ทำเลแนะนำ")
     if not df_display.empty:
-        top_list = df_display.sort_values('Total_Score', ascending=False).head(5)
-        for _, row in top_list.iterrows():
-            card_html = f"""
+        top5 = df_display.sort_values("Total_Score", ascending=False).head(5)
+        for rank, row in enumerate(top5.itertuples(index=False), 1):
+            grade = score_grade(row.Total_Score)
+            clr   = score_color(row.Total_Score)
+            st.markdown(f"""
             <div class="property-card">
-                <div class="card-title-row">
-                    <div class="card-title-text">{row['Tambon']}</div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="font-size:20px; font-weight:bold; color:#000000;">คะแนนความน่าลงทุน</span>
-                        <span class="score-badge">{row['Total_Score']}</span>
+                <div style="display:flex;justify-content:space-between;
+                            align-items:flex-start;margin-bottom:8px;">
+                    <div>
+                        <div style="font-size:12px;color:#999;font-weight:600;">
+                            #{rank}
+                        </div>
+                        <div style="font-weight:800;font-size:17px;color:#111;
+                                    line-height:1.2;">
+                            {row.Tambon}
+                        </div>
+                    </div>
+                    <div style="background:linear-gradient(135deg,#1A365D,#2C5282);
+                                color:white;padding:6px 12px;border-radius:10px;
+                                font-size:17px;font-weight:900;text-align:center;">
+                        {row.Total_Score:.1f}<br>
+                        <span style="font-size:10px;opacity:0.8;">/10</span>
                     </div>
                 </div>
-                <div class="card-location">📍 {row['Amphoe']}, {row['Province']}</div>
-                <div class="card-divider"></div>
-                <div class="card-price">฿{row['Est_Land_Price']:,.0f} <span style="font-size: 16px; color: #888888; font-weight: normal;">/ตารางวา</span></div>
+                <div style="font-size:13px;color:#666;margin-bottom:12px;
+                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                    📍 {row.Amphoe}, {row.Province}
+                </div>
+                <div style="border-top:1px dashed #eee;padding-top:10px;
+                            display:flex;justify-content:space-between;align-items:center;">
+                    <div style="color:#2ECC71;font-size:19px;font-weight:700;">
+                        ฿{row.Est_Land_Price:,.0f}
+                        <span style="font-size:12px;color:#888;font-weight:400;">/ตร.ว.</span>
+                    </div>
+                    <div style="background:{clr}22;color:{clr};
+                                border:1px solid {clr};padding:3px 10px;
+                                border-radius:20px;font-size:12px;font-weight:700;">
+                        เกรด {grade}
+                    </div>
+                </div>
             </div>
-            """
-            st.markdown(card_html, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
     else:
-        st.warning("⚠️ ไม่พบข้อมูลในช่วงราคานี้")
+        st.warning("⚠️ ไม่พบข้อมูล")
 
-# --- 5. Price Breakdown Section (New Layout) ---
+# ─────────────────────────────────────────
+# PRICE BREAKDOWN
+# ─────────────────────────────────────────
 st.markdown("---")
-st.subheader("🧮 แกะสูตรคำนวณราคา (Price Breakdown)")
+st.markdown("### 🧮 แกะสูตรคำนวณราคา (Price Breakdown)")
 
 if not df_display.empty:
-    st.info("เลือกตำบลด้านล่าง เพื่อดูว่าทฤษฎีแต่ละตัวส่งผลต่อราคาอย่างไร")
-    tambon_opts = df_display['Tambon'].unique()
-    target_tambon = st.selectbox("🔍 เลือกตำบลเพื่อถอดสูตร", tambon_opts)
-    
-    if target_tambon:
-        row = df_display[df_display['Tambon'] == target_tambon].iloc[0]
-        
-        base_price = row['Avg_Land_Price']
-        density_fac = row['Factor_Density']
-        central_fac = row['Factor_Centrality']
-        final_price = row['Est_Land_Price']
-        
-        # 1. Metric Cards (Grid Layout)
-        html_code = f"""
-       <style>
-            .metric-container {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }}
-            .metric-card {{ background-color: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; overflow: hidden; border: 1px solid rgba(0,0,0,0.05); }}
-            .card-title {{ font-size: 16px; font-weight: bold; color: #555; margin-bottom: 10px; }}
-            .card-value {{ font-size: 28px; font-weight: 900; color: #333; }}
-            .card-icon {{ position: absolute; top: 15px; right: 15px; font-size: 40px; opacity: 0.2; }}
-            .card-footer {{ margin-top: 15px; font-size: 13px; font-weight: bold; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1); }}
-        </style>
-        <div class="metric-container">
-            <div class="metric-card" style="background: #E3F2FD;">
-                <div class="card-title">ราคาตั้งต้น (Base)</div>
-                <div class="card-value" style="color:#1565C0;">฿{base_price:,.0f}</div>
-                <div class="card-icon">🏷️</div>
-                <div class="card-footer" style="color:#1565C0;">ราคาประเมินกรมที่ดิน</div>
+    st.info("เลือกตำบลด้านล่าง เพื่อดูว่าแต่ละปัจจัยส่งผลต่อราคาอย่างไร")
+
+    # ✅ ป้องกันตำบลชื่อซ้ำ — ใส่ชื่ออำเภอกำกับ
+    df_display = df_display.copy()
+    df_display["_label"] = df_display["Tambon"] + "  [" + df_display["Amphoe"] + "]"
+    target_label = st.selectbox("🔍 เลือกตำบลเพื่อถอดสูตร", df_display["_label"].tolist())
+    row = df_display[df_display["_label"] == target_label].iloc[0]
+
+    base_price  = row["Avg_Land_Price"]
+    dens_fac    = row["Factor_Density"]
+    cent_fac    = row["Factor_Centrality"]
+    final_price = row["Est_Land_Price"]
+    avg_price   = df_display["Est_Land_Price"].mean()
+    pct_change  = ((final_price - base_price) / base_price * 100) if base_price else 0
+    chg_color   = "#2ECC71" if pct_change >= 0 else "#E74C3C"
+    chg_arrow   = "▲" if pct_change >= 0 else "▼"
+
+    # ── Metric Cards ──
+    st.markdown(f"""
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+                gap:20px;margin-bottom:28px;">
+        <div style="background:#E3F2FD;border-radius:14px;padding:22px;position:relative;">
+            <div style="font-size:15px;font-weight:700;color:#555;">ราคาตั้งต้น (Base)</div>
+            <div style="font-size:30px;font-weight:900;color:#1565C0;margin:8px 0;">
+                ฿{base_price:,.0f}
             </div>
-            <div class="metric-card" style="background: #FFF3E0;">
-                <div class="card-title">Density Factor</div>
-                <div class="card-value" style="color:#E65100;">x {density_fac:.2f}</div>
-                <div class="card-icon">👥</div>
-                <div class="card-footer" style="color:#E65100;">ปรับตามความหนาแน่น</div>
-            </div>
-            <div class="metric-card" style="background: #F3E5F5;">
-                <div class="card-title">Location Factor</div>
-                <div class="card-value" style="color:#7B1FA2;">x {central_fac:.1f}</div>
-                <div class="card-icon">🏙️</div>
-                <div class="card-footer" style="color:#7B1FA2;">ปรับตามโซนเมือง</div>
-            </div>
-            <div class="metric-card" style="background: #E8F5E9; border: 2px solid #4CAF50;">
-                <div class="card-title">ราคาประเมิน AI</div>
-                <div class="card-value" style="color:#2E7D32;">฿{final_price:,.0f}</div>
-                <div class="card-icon" style="opacity:1;">💰</div>
-                <div class="card-footer" style="color:#2E7D32;">สรุปราคาขายจริง</div>
+            <div style="font-size:45px;position:absolute;top:12px;right:16px;opacity:0.15;">🏷️</div>
+            <div style="font-size:12px;font-weight:700;color:#1565C0;
+                        border-top:1px solid rgba(21,101,192,0.2);padding-top:8px;">
+                ราคาประเมินกรมที่ดิน
             </div>
         </div>
-        """
-        st.markdown(html_code, unsafe_allow_html=True)
-        
-        # 2. Factor Analysis
-        st.subheader("📊 วิเคราะห์ปัจจัย (Factors Analysis)")
-        f1, f2 = st.columns(2)
-        with f1:
-            if density_fac > 1.0:
-                st.success(f"📈 **Population Density (+):** ประชากรหนาแน่นกว่าค่าเฉลี่ย ({density_fac:.2f} เท่า)")
-            else:
-                st.warning(f"📉 **Population Density (-):** ประชากรน้อยกว่าค่าเฉลี่ย ({density_fac:.2f} เท่า)")
-        with f2:
-            if central_fac > 1.0:
-                st.info(f"🏙️ **Central Place Effect:** อยู่ในเขตอำเภอเมือง/ศูนย์กลาง")
-            else:
-                st.markdown(f"""<div style="padding:10px; border-radius:5px; background-color:#F0F2F6; color:#31333F;">
-                🏡 <b>Central Place Effect:</b> เป็นพื้นที่รอบนอก</div>""", unsafe_allow_html=True)
-        
-        st.write("")
+        <div style="background:#FFF3E0;border-radius:14px;padding:22px;position:relative;">
+            <div style="font-size:15px;font-weight:700;color:#555;">Density Factor</div>
+            <div style="font-size:30px;font-weight:900;color:#E65100;margin:8px 0;">
+                × {dens_fac:.2f}
+            </div>
+            <div style="font-size:45px;position:absolute;top:12px;right:16px;opacity:0.15;">👥</div>
+            <div style="font-size:12px;font-weight:700;color:#E65100;
+                        border-top:1px solid rgba(230,81,0,0.2);padding-top:8px;">
+                ปรับตามความหนาแน่นประชากร
+            </div>
+        </div>
+        <div style="background:#F3E5F5;border-radius:14px;padding:22px;position:relative;">
+            <div style="font-size:15px;font-weight:700;color:#555;">Location Factor</div>
+            <div style="font-size:30px;font-weight:900;color:#7B1FA2;margin:8px 0;">
+                × {cent_fac:.1f}
+            </div>
+            <div style="font-size:45px;position:absolute;top:12px;right:16px;opacity:0.15;">🏙️</div>
+            <div style="font-size:12px;font-weight:700;color:#7B1FA2;
+                        border-top:1px solid rgba(123,31,162,0.2);padding-top:8px;">
+                {"อำเภอเมือง/ศูนย์กลาง (+20%)" if cent_fac > 1.0 else "พื้นที่รอบนอก"}
+            </div>
+        </div>
+        <div style="background:#E8F5E9;border-radius:14px;padding:22px;
+                    border:2px solid #4CAF50;position:relative;">
+            <div style="font-size:15px;font-weight:700;color:#555;">ราคาประเมิน AI</div>
+            <div style="font-size:30px;font-weight:900;color:#2E7D32;margin:8px 0;">
+                ฿{final_price:,.0f}
+            </div>
+            <div style="font-size:45px;position:absolute;top:12px;right:16px;opacity:0.3;">💰</div>
+            <div style="font-size:12px;font-weight:700;color:#2E7D32;
+                        border-top:1px solid rgba(46,125,50,0.2);padding-top:8px;">
+                ราคาสรุปหลังปรับปัจจัยแล้ว
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-        # 3. Graph
-        st.subheader("📈 เปรียบเทียบราคาและวิเคราะห์เชิงลึก (Price Comparison)")
-        avg_area_price = df_display['Est_Land_Price'].mean()
-        pct_change = ((final_price - base_price) / base_price) * 100
-        change_color = "#2ECC71" if pct_change >= 0 else "#E74C3C"
-        change_arrow = "▲" if pct_change >= 0 else "▼"
+    # ── Factor Analysis ──
+    st.markdown("#### 📊 วิเคราะห์ปัจจัย")
+    fa, fb = st.columns(2)
+    with fa:
+        if dens_fac > 1.0:
+            st.success(f"📈 **Population Density (+):** หนาแน่นกว่าค่าเฉลี่ยจังหวัด ({dens_fac:.2f}×)")
+        else:
+            st.warning(f"📉 **Population Density (-):** น้อยกว่าค่าเฉลี่ยจังหวัด ({dens_fac:.2f}×)")
+    with fb:
+        if cent_fac > 1.0:
+            st.info("🏙️ **Location:** อยู่ในเขตอำเภอเมือง/ศูนย์กลาง (+20%)")
+        else:
+            st.markdown("""<div style="padding:10px;border-radius:5px;
+                background:#1e2a35;color:#ccc;border:1px solid #444;">
+                🏡 <b>Location:</b> พื้นที่รอบนอก (ไม่มี bonus)
+            </div>""", unsafe_allow_html=True)
 
-        fig = go.Figure()
+    st.markdown("<br>", unsafe_allow_html=True)
 
-        fig.add_trace(go.Bar(
-            x=['ราคาพื้นฐาน'], y=[base_price], name='ราคาพื้นฐาน',
-            marker=dict(color=base_price, colorscale=[[0, '#CFD8DC'], [1, '#90A4AE']]),
-            text=[f"฿{base_price:,.0f}"], textposition='auto', width=0.4
-        ))
+    # ── Bar Chart ──
+    st.markdown("#### 📈 เปรียบเทียบราคา vs ค่าเฉลี่ย")
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=["ราคาพื้นฐาน (Base)"], y=[base_price], name="Base",
+        marker_color="#90A4AE",
+        text=[f"฿{base_price:,.0f}"], textposition="auto", width=0.4,
+    ))
+    fig.add_trace(go.Bar(
+        x=["ราคาประเมิน AI"], y=[final_price], name="AI Estimate",
+        marker_color="#4CAF50",
+        text=[f"฿{final_price:,.0f}"], textposition="auto", width=0.4,
+    ))
+    # เส้นค่าเฉลี่ย
+    fig.add_shape(type="line", x0=-0.5, x1=1.5,
+                  y0=avg_price, y1=avg_price,
+                  line=dict(color="#FF5722", width=2, dash="dash"))
+    fig.add_annotation(x=1.5, y=avg_price,
+                       text=f"ค่าเฉลี่ย ฿{avg_price:,.0f}",
+                       showarrow=False, yshift=10, xanchor="right",
+                       font=dict(color="#FF5722", size=12))
+    # % impact
+    fig.add_annotation(x=0.5, y=max(base_price, final_price) * 1.08,
+                       text=f"{chg_arrow} {pct_change:+.1f}% Impact",
+                       showarrow=False,
+                       font=dict(size=20, color=chg_color),
+                       bgcolor="white", bordercolor=chg_color,
+                       borderwidth=1, borderpad=5)
+    fig.update_layout(
+        height=420, showlegend=False,
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Sarabun", size=14, color="white"),
+        yaxis=dict(showgrid=True, gridcolor="#333"),
+        xaxis=dict(showgrid=False),
+        bargap=0.3,
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
-        fig.add_trace(go.Bar(
-            x=['ราคาประเมิน AI'], y=[final_price], name='ราคาประเมิน AI',
-            marker=dict(color=final_price, colorscale=[[0, '#A5D6A7'], [1, '#4CAF50']]),
-            text=[f"฿{final_price:,.0f}"], textposition='auto', width=0.4
-        ))
-        
-        fig.add_shape(type="line", x0=-0.5, x1=1.5, y0=avg_area_price, y1=avg_area_price,
-            line=dict(color="#FF5722", width=2, dash="dash"),
-        )
-        fig.add_annotation(
-            x=1.5, y=avg_area_price, text=f"ค่าเฉลี่ย: ฿{avg_area_price:,.0f}",
-            showarrow=False, yshift=10, xanchor="right", font=dict(color="#FF5722", size=12)
-        )
-
-        fig.add_annotation(
-            x=0.5, y=max(base_price, final_price) * 1.05,
-            text=f"{change_arrow} {pct_change:+.1f}% Impact",
-            showarrow=False,
-            font=dict(size=20, color=change_color, weight="bold"),
-            bgcolor="white", bordercolor=change_color, borderwidth=1, borderpad=5
-        )
-
-        fig.update_layout(
-            title="เปรียบเทียบราคา vs ปัจจัยผลกระทบ", height=500,
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(family="Sarabun", size=14, color="white"),
-            yaxis=dict(showgrid=True, gridcolor='#333'), xaxis=dict(showgrid=False),
-            bargap=0.2, showlegend=False
-        )
-        st.plotly_chart(fig, use_container_width=True)
 else:
-    st.warning("⚠️ ไม่พบข้อมูลในช่วงราคานี้ หรือ ในพื้นที่ที่เลือก กรุณาปรับตัวกรอง")
+    st.warning("⚠️ ไม่พบข้อมูลในช่วงราคานี้ กรุณาปรับตัวกรอง")
