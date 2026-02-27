@@ -215,50 +215,59 @@ with col_list:
             grade = score_grade(row.Total_Score)
             clr   = score_color(row.Total_Score)
             st.markdown(f"""
-<div class="property-card">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        <div style="background:#1A365D;color:white;width:26px;height:26px;
-                    border-radius:50%;display:flex;align-items:center;
-                    justify-content:center;font-size:13px;font-weight:800;
-                    flex-shrink:0;">
-            {rank}
-        </div>
-        <div style="font-weight:900;font-size:20px;color:#111;line-height:1.2;">
-            {row.Tambon}
-        </div>
-    </div>
-    <div style="font-size:14px;color:#666;margin-bottom:14px;
-                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-        📍 {row.Amphoe}, {row.Province}
-    </div>
-    <div style="background:linear-gradient(135deg,#1A365D,#2C5282);
-                border-radius:12px;padding:12px 16px;margin-bottom:14px;
-                display:flex;align-items:center;justify-content:space-between;">
-        <div style="color:rgba(255,255,255,0.85);font-size:14px;font-weight:600;">
-            คะแนนความน่าลงทุน
-        </div>
-        <div style="display:flex;align-items:baseline;gap:3px;">
-            <span style="color:white;font-size:28px;font-weight:900;
-                         line-height:1;">{row.Total_Score:.1f}</span>
-            <span style="color:rgba(255,255,255,0.65);font-size:15px;
-                         font-weight:600;">/10</span>
-        </div>
-    </div>
-    <div style="border-top:1px dashed #eee;padding-top:12px;
-                display:flex;justify-content:space-between;align-items:center;">
-        <div style="color:#2ECC71;font-size:20px;font-weight:700;">
-            ฿{row.Est_Land_Price:,.0f}
-            <span style="font-size:13px;color:#888;font-weight:400;">/ตร.ว.</span>
-        </div>
-        <div style="background:{clr}22;color:{clr};
-                    border:2px solid {clr};padding:5px 16px;
-                    border-radius:20px;font-size:15px;font-weight:800;
-                    letter-spacing:0.5px;">
-            เกรด {grade}
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+            <div class="property-card">
+
+                <!-- บรรทัดที่ 1: อันดับ + ชื่อตำบล -->
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                    <div style="background:#1A365D;color:white;width:26px;height:26px;
+                                border-radius:50%;display:flex;align-items:center;
+                                justify-content:center;font-size:13px;font-weight:800;
+                                flex-shrink:0;">
+                        {rank}
+                    </div>
+                    <div style="font-weight:900;font-size:20px;color:#111;line-height:1.2;">
+                        {row.Tambon}
+                    </div>
+                </div>
+
+                <!-- บรรทัดที่ 2: ที่ตั้ง -->
+                <div style="font-size:14px;color:#666;margin-bottom:14px;
+                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                    📍 {row.Amphoe}, {row.Province}
+                </div>
+
+                <!-- กล่องคะแนน: ข้อความ + ตัวเลข + /10 บรรทัดเดียวกัน -->
+                <div style="background:linear-gradient(135deg,#1A365D,#2C5282);
+                            border-radius:12px;padding:12px 16px;margin-bottom:14px;
+                            display:flex;align-items:center;justify-content:space-between;">
+                    <div style="color:rgba(255,255,255,0.85);font-size:14px;font-weight:600;">
+                        คะแนนความน่าลงทุน
+                    </div>
+                    <div style="display:flex;align-items:baseline;gap:3px;">
+                        <span style="color:white;font-size:28px;font-weight:900;
+                                     line-height:1;">{row.Total_Score:.1f}</span>
+                        <span style="color:rgba(255,255,255,0.65);font-size:15px;
+                                     font-weight:600;">/10</span>
+                    </div>
+                </div>
+
+                <!-- ราคา + เกรด -->
+                <div style="border-top:1px dashed #eee;padding-top:12px;
+                            display:flex;justify-content:space-between;align-items:center;">
+                    <div style="color:#2ECC71;font-size:20px;font-weight:700;">
+                        ฿{row.Est_Land_Price:,.0f}
+                        <span style="font-size:13px;color:#888;font-weight:400;">/ตร.ว.</span>
+                    </div>
+                    <div style="background:{clr}22;color:{clr};
+                                border:2px solid {clr};padding:5px 16px;
+                                border-radius:20px;font-size:15px;font-weight:800;
+                                letter-spacing:0.5px;">
+                        เกรด {grade}
+                    </div>
+                </div>
+
+            </div>
+            """, unsafe_allow_html=True)
     else:
         st.warning("⚠️ ไม่พบข้อมูล")
 
