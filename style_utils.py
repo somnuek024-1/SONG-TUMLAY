@@ -36,9 +36,7 @@ def apply_custom_style():
     # ── โลโก้ ──
     logo_file = _find_file([
         "logo.png",                       # ✅ ไฟล์หลักที่ไม่มีพื้นหลัง
-        "logonobackgroundoriginal.png",
-        "logonobackground.png",
-        "logo.jpg",
+
     ])
 
     logo_css = ""
@@ -169,3 +167,4 @@ def apply_custom_style():
     }}
     </style>
     """, unsafe_allow_html=True)
+
