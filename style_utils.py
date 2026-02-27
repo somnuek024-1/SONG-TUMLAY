@@ -1,5 +1,5 @@
 """
-style_utils.py — CSS และ Helper ทั้งหมด (เวอร์ชันแก้ไขสมบูรณ์)
+style_utils.py — CSS และ Helper ทั้งหมด
 """
 
 import streamlit as st
@@ -33,43 +33,65 @@ def get_hero_bg_css(fallback_url: str = "") -> str:
 def apply_custom_style():
     """เรียกครั้งเดียวในทุกหน้า — ฝัง CSS ทั้งหมด"""
 
-    # ✅ แสดงโลโก้ผ่าน st.sidebar.image() แทน CSS background-image
-    # วิธีนี้เสถียรกว่ามาก ไม่โดน Streamlit override
-    # ✅ logo.png คือไฟล์ที่ไม่มีพื้นหลัง — ขึ้นก่อนเสมอ
+    # ── โลโก้: อ่านเป็น base64 เพื่อฝังใน CSS
+    # ใน Streamlit multipage app, stSidebarNav อยู่เหนือ sidebar content
+    # วิธีเดียวที่โลโก้จะอยู่เหนือ nav คือใส่เป็น CSS background-image
+    logo_b64 = ""
     logo_file = _find_file([
-        "logo.png",
+        "logo.png",                       # ✅ ไฟล์ที่ user เตรียมไว้ (ไม่มีพื้นหลัง)
         "logonobackgroundoriginal.png",
         "logonobackground.png",
         "logo.jpg",
     ])
     if logo_file:
-        try:
-            st.sidebar.image(logo_file, use_container_width=True)
-        except Exception:
-            pass
+        logo_b64 = _b64(logo_file)
 
-    st.markdown("""
+    # ── กำหนด CSS สำหรับโลโก้ (ถ้ามีไฟล์)
+    # ⚠️ สำคัญ: ต้องใช้ background-image และ background-color แยกกัน
+    #    ห้ามใช้ background shorthand เพราะจะ reset background-image ทิ้ง
+    if logo_b64:
+        logo_section_css = f"""
+            /* โลโก้อยู่เหนือ nav — ใช้ background-image บน stSidebarNav */
+            div[data-testid="stSidebarNav"] {{
+                background-image: url("data:image/png;base64,{logo_b64}") !important;
+                background-repeat: no-repeat !important;
+                background-position: center 24px !important;
+                background-size: 200px auto !important;
+                /* ✅ background-color แยก property — ไม่ทับ background-image */
+                background-color: #1A365D !important;
+                padding-top: 220px !important;
+                padding-bottom: 8px !important;
+            }}
+        """
+    else:
+        logo_section_css = """
+            div[data-testid="stSidebarNav"] {
+                background-color: #1A365D !important;
+                padding-bottom: 8px !important;
+            }
+        """
+
+    st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap');
 
     /* ── Global ── */
-    html, body, [class*="css"] {
+    html, body, [class*="css"] {{
         font-family: 'Sarabun', sans-serif;
-    }
+    }}
 
     /* ── Dark Background ── */
-    [data-testid="stAppViewContainer"] { background-color: #1A2228; }
-    header[data-testid="stHeader"]     { background-color: #1A2228; }
+    [data-testid="stAppViewContainer"] {{ background-color: #1A2228; }}
+    header[data-testid="stHeader"]     {{ background-color: #1A2228; }}
 
     /* ═══════════════════════════════════════
        SIDEBAR
     ═══════════════════════════════════════ */
-    [data-testid="stSidebar"] > div:first-child {
+    [data-testid="stSidebar"] > div:first-child {{
         background: linear-gradient(180deg, #1A365D 0%, #0F2137 100%);
-    }
+    }}
 
-    /* ✅ ระบุ element ชัดเจน ไม่ใช้ * wildcard
-       เพื่อป้องกันการ override background ของ element อื่น */
+    /* สีตัวอักษรใน Sidebar — ระบุ element เฉพาะ ไม่ใช้ * wildcard */
     [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] span,
     [data-testid="stSidebar"] label,
@@ -78,108 +100,98 @@ def apply_custom_style():
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3,
-    [data-testid="stSidebar"] small {
+    [data-testid="stSidebar"] small,
+    [data-testid="stSidebar"] .stMarkdown {{
         color: white !important;
-    }
+    }}
 
-    /* โลโก้ที่แสดงผ่าน st.sidebar.image() */
-    [data-testid="stSidebar"] [data-testid="stImage"] {
-        background: transparent !important;
-        padding: 24px 28px 16px 28px !important;
-    }
-    [data-testid="stSidebar"] [data-testid="stImage"] img {
-        border-radius: 0 !important;
-        display: block;
-    }
-    /* กำจัด margin/padding รอบๆ image widget */
-    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:first-child {
-        background: transparent !important;
-    }
+    /* ═══════════════════════════════════════
+       SIDEBAR NAV + LOGO
+    ═══════════════════════════════════════ */
+    {logo_section_css}
 
-    /* ── Sidebar Nav (กล่องเมนู) ── */
-    div[data-testid="stSidebarNav"] {
-        background-color: #1A365D !important;
-        padding-bottom: 8px;
-    }
-
-    /* ลบ background ออกจาก element ลูกใน nav */
+    /* ลบ background ออกจาก element ลูกใน nav (ไม่แตะ stSidebarNav เอง) */
     div[data-testid="stSidebarNav"] ul,
-    div[data-testid="stSidebarNav"] li {
+    div[data-testid="stSidebarNav"] li {{
         background-color: transparent !important;
-    }
-    div[data-testid="stSidebarNav"] a {
+    }}
+    div[data-testid="stSidebarNav"] a {{
         background-color: transparent !important;
-        color: white !important;
-    }
-    div[data-testid="stSidebarNav"] a:hover {
+        color: rgba(255,255,255,0.85) !important;
+    }}
+    div[data-testid="stSidebarNav"] a:hover {{
         background-color: rgba(255,255,255,0.1) !important;
         border-radius: 8px;
-    }
-    div[data-testid="stSidebarNav"] a[aria-current="page"] {
+        color: white !important;
+    }}
+    div[data-testid="stSidebarNav"] a[aria-current="page"] {{
         background-color: rgba(255,255,255,0.18) !important;
         border-radius: 8px;
         font-weight: 700;
-    }
-    div[data-testid="stSidebarNav"] > ul {
+        color: white !important;
+    }}
+
+    /* Scale nav items */
+    div[data-testid="stSidebarNav"] > ul {{
         transform: scale(1.05);
         transform-origin: top center;
         width: 95% !important;
         margin: 0 auto;
-    }
+    }}
 
     /* ═══════════════════════════════════════
        WIDGETS
     ═══════════════════════════════════════ */
     /* Dropdown */
-    div[data-baseweb="select"] > div {
+    div[data-baseweb="select"] > div {{
         background-color: #262730 !important;
         color: white !important;
         border-color: rgba(255,255,255,0.15) !important;
         border-radius: 8px !important;
-    }
+    }}
 
     /* Number Input */
-    div[data-testid="stNumberInput"] input {
+    div[data-testid="stNumberInput"] input {{
         color: #ffffff !important;
         background-color: #262730 !important;
         border: 1px solid rgba(255,255,255,0.15) !important;
         border-radius: 8px !important;
         -webkit-text-fill-color: #ffffff !important;
         caret-color: #ffffff !important;
-    }
-    div[data-testid="stNumberInput"] button {
+    }}
+    div[data-testid="stNumberInput"] button {{
         background-color: #333842 !important;
         border-color: rgba(255,255,255,0.15) !important;
         color: white !important;
-    }
+    }}
 
-    /* Sidebar dropdown override */
-    [data-testid="stSidebar"] div[data-baseweb="select"] > div {
+    /* Sidebar dropdown */
+    [data-testid="stSidebar"] div[data-baseweb="select"] > div {{
         background-color: rgba(255,255,255,0.08) !important;
         color: white !important;
-    }
+    }}
 
     /* ═══════════════════════════════════════
        CARDS
     ═══════════════════════════════════════ */
-    .property-card, .mk-card {
+    .property-card, .mk-card {{
         background-color: #ffffff !important;
         border-radius: 14px;
         padding: 20px;
         margin-bottom: 16px;
         box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         border: 1px solid rgba(0,0,0,0.06);
-    }
+    }}
 
     /* ═══════════════════════════════════════
        DARK STAT BOX
     ═══════════════════════════════════════ */
-    .dark-stat-box {
+    .dark-stat-box {{
         background-color: #262730;
         border: 1px solid rgba(255,255,255,0.08);
         border-radius: 12px;
         padding: 16px;
         text-align: center;
-    }
+    }}
     </style>
     """, unsafe_allow_html=True)
