@@ -5,12 +5,25 @@ style_utils.py — CSS และ Helper ทั้งหมด
 import streamlit as st
 import base64
 import os
-import mimetypes
 
 
 def _b64(filepath: str) -> str:
     with open(filepath, "rb") as f:
-        return base64.b64encode(f.read()).decode("utf-8")
+        return base64.b64encode(f.read()).decode()
+
+
+def _mime_type(filepath: str) -> str:
+    """ตรวจ MIME type จาก header bytes จริง — ไม่ใช้นามสกุลไฟล์
+    เพราะบางไฟล์ตั้งชื่อ .png แต่จริงๆ เป็น JPEG"""
+    with open(filepath, "rb") as f:
+        header = f.read(8)
+    if header[:2] == b'\xff\xd8':
+        return "image/jpeg"
+    if header[:8] == b'\x89PNG\r\n\x1a\n':
+        return "image/png"
+    if header[:4] == b'RIFF':
+        return "image/webp"
+    return "image/jpeg"  # fallback
 
 
 def _find_file(candidates: list) -> str | None:
@@ -24,8 +37,7 @@ def get_hero_bg_css(fallback_url: str = "") -> str:
     """คืน CSS background-image — ใช้ไฟล์ local ก่อน ถ้าไม่มีใช้ URL"""
     bg = _find_file(["background.jpg", "background.png", "background.webp"])
     if bg:
-        mime, _ = mimetypes.guess_type(bg)
-        if not mime: mime = "image/jpeg"
+        mime = _mime_type(bg)
         return f"url('data:{mime};base64,{_b64(bg)}')"
     if fallback_url:
         return f"url('{fallback_url}')"
@@ -41,27 +53,20 @@ def apply_custom_style():
         "logonobackgroundoriginal.png",
         "logonobackground.png",
         "logo.jpg",
-        "logo.jpeg"
     ])
 
     logo_css = ""
     if logo_file:
-        b64 = _b64(logo_file)
-        mime_type, _ = mimetypes.guess_type(logo_file)
-        if not mime_type:
-            mime_type = "image/png"
-
+        b64  = _b64(logo_file)
+        mime = _mime_type(logo_file)   # ✅ ตรวจ MIME จาก bytes จริง ไม่ใช่นามสกุล
         logo_css = f"""
-            background-image: url("data:{mime_type};base64,{b64}");
+            background-image: url("data:{mime};base64,{b64}");
             background-repeat: no-repeat;
             background-position: center top 20px;
-            background-size: 70% auto;
-            padding-top: 240px !important;
+            background-size: 200px auto;
+            padding-top: 230px !important;
         """
-    else:
-        st.sidebar.warning("⚠️ ไม่พบไฟล์รูปโลโก้ กรุณาเช็คชื่อไฟล์")
 
-    # ── ฝัง CSS ──
     st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap');
@@ -73,18 +78,18 @@ def apply_custom_style():
 
     /* ── Dark Background ── */
     [data-testid="stAppViewContainer"] {{ background-color: #1A2228; }}
-    header[data-testid="stHeader"]     {{ background-color: transparent; }}
+    header[data-testid="stHeader"]     {{ background-color: #1A2228; }}
 
     /* ═══════════════════════════════════════
-       SIDEBAR BACKGROUND (บังคับสีทึบทั้งหมด)
+       SIDEBAR (บังคับให้เป็นสีน้ำเงินเข้มสีเดียวทั้งแผง)
     ═══════════════════════════════════════ */
     section[data-testid="stSidebar"] {{
-        background-color: #1A365D !important;
+        background-color: #1A365D !important; /* กำหนดสีหลักที่นี่จุดเดียว */
         border-right: none !important;
     }}
     
     section[data-testid="stSidebar"] > div {{
-        background-color: transparent !important;
+        background-color: transparent !important; /* ลบสีพื้นหลังตัวลูกเพื่อให้โปร่งใสเห็นสีหลัก */
     }}
 
     [data-testid="stSidebar"] * {{
@@ -94,9 +99,10 @@ def apply_custom_style():
     /* ── Logo + Nav ── */
     div[data-testid="stSidebarNav"] {{
         {logo_css}
-        background-color: transparent !important;
+        background-color: transparent !important; /* ✅ แก้ไข: ลบการกำหนดสีพื้นหลังเดิมออก และเปลี่ยนเป็นแบบโปร่งใส */
     }}
 
+    /* ลบ background ออกจาก element ลูก ไม่ให้ทับรูปโลโก้ */
     div[data-testid="stSidebarNav"] ul,
     div[data-testid="stSidebarNav"] li,
     div[data-testid="stSidebarNav"] a,
@@ -113,10 +119,17 @@ def apply_custom_style():
         border-radius: 8px;
         font-weight: 700;
     }}
+    div[data-testid="stSidebarNav"] > ul {{
+        transform: scale(1.05);
+        transform-origin: top center;
+        width: 95% !important;
+        margin: 0 auto;
+    }}
 
     /* ═══════════════════════════════════════
        WIDGETS
     ═══════════════════════════════════════ */
+    /* Dropdown */
     div[data-baseweb="select"] > div {{
         background-color: #262730 !important;
         color: white !important;
@@ -124,14 +137,22 @@ def apply_custom_style():
         border-radius: 8px !important;
     }}
 
+    /* Number Input */
     div[data-testid="stNumberInput"] input {{
         color: #ffffff !important;
         background-color: #262730 !important;
         border: 1px solid rgba(255,255,255,0.15) !important;
         border-radius: 8px !important;
         -webkit-text-fill-color: #ffffff !important;
+        caret-color: #ffffff !important;
+    }}
+    div[data-testid="stNumberInput"] button {{
+        background-color: #333842 !important;
+        border-color: rgba(255,255,255,0.15) !important;
+        color: white !important;
     }}
 
+    /* Sidebar dropdown */
     [data-testid="stSidebar"] div[data-baseweb="select"] > div {{
         background-color: rgba(255,255,255,0.08) !important;
         color: white !important;
@@ -140,7 +161,8 @@ def apply_custom_style():
     /* ═══════════════════════════════════════
        TYPOGRAPHY
     ═══════════════════════════════════════ */
-    .stMarkdown p, .stMarkdown li, h1, h2, h3, label, p {{
+    .stMarkdown p, .stMarkdown li,
+    h1, h2, h3, label, p {{
         color: #ffffff !important;
     }}
 
