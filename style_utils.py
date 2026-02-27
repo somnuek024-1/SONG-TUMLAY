@@ -49,6 +49,7 @@ def apply_custom_style():
             background-position: center top 20px;
             background-size: 260px auto;
             padding-top: 255px !important;
+            background-color: #1A365D;
         """
 
     st.markdown(f"""
