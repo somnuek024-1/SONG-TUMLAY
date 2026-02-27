@@ -35,8 +35,10 @@ def apply_custom_style():
 
     # ✅ แก้ไขชื่อไฟล์โลโก้ให้ตรงกับไฟล์จริง
     logo_file = _find_file([
+        "logonobackgroundoriginal.png",
+        "logonobackground.png",
         "logo.png",
-        
+        "logo.jpg",
     ])
     logo_css = ""
     if logo_file:
