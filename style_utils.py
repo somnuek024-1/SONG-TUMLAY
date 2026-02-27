@@ -60,10 +60,11 @@ def apply_custom_style():
         logo_css = f"""
             background-image: url("data:{mime};base64,{b64}");
             background-repeat: no-repeat;
-            background-position: center top 20px;
-            /* ปรับให้โลโก้กว้าง 85% ของแถบ เพื่อให้ใหญ่เต็มตาแต่ไม่ล้น */
-            background-size: 85% auto; 
-            padding-top: 260px !important;
+            background-position: center top 10px;
+            /* 🔥 ขยายโลโก้ให้กว้าง 100% ชิดขอบซ้ายขวาของ Sidebar เลย */
+            background-size: 100% auto; 
+            /* 🔥 ดันเมนูข้อความลงมาให้เยอะขึ้น หลบโลโก้ที่ใหญ่ขึ้น */
+            padding-top: 320px !important;
         """
 
     st.markdown(f"""
@@ -79,9 +80,8 @@ def apply_custom_style():
     header[data-testid="stHeader"]     {{ background-color: transparent; }}
 
     /* ═══════════════════════════════════════
-       SIDEBAR (แก้ปัญหากรอบสี่เหลี่ยมแยกสี)
+       SIDEBAR (สีเนียนเป็นแผ่นเดียวกัน)
     ═══════════════════════════════════════ */
-    /* 1. บังคับสีพื้นหลัง Sidebar ตัวแม่ให้เป็นสีน้ำเงินเข้มสีเดียวทั้งแผ่น */
     [data-testid="stSidebar"] > div:first-child {{
         background: #1A365D !important;
     }}
@@ -90,13 +90,11 @@ def apply_custom_style():
         color: white !important;
     }}
 
-    /* 2. ทำให้กล่องโลโก้ (stSidebarNav) โปร่งใส เพื่อให้กลืนไปกับสีหลัก */
     div[data-testid="stSidebarNav"] {{
         {logo_css}
         background-color: transparent !important; 
     }}
 
-    /* ลบสีพื้นหลังของกล่องย่อยๆ ออกให้หมด */
     div[data-testid="stSidebarNav"] ul,
     div[data-testid="stSidebarNav"] li,
     div[data-testid="stSidebarNav"] a,
@@ -150,15 +148,12 @@ def apply_custom_style():
     }}
 
     /* ═══════════════════════════════════════
-       TYPOGRAPHY
+       TYPOGRAPHY & CARDS
     ═══════════════════════════════════════ */
     .stMarkdown p, .stMarkdown li, h1, h2, h3, label, p {{
         color: #ffffff !important;
     }}
 
-    /* ═══════════════════════════════════════
-       CARDS
-    ═══════════════════════════════════════ */
     .property-card, .mk-card {{
         background-color: #ffffff !important;
         border-radius: 14px;
