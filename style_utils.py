@@ -1,20 +1,13 @@
-"""
-style_utils.py — CSS และ Helper ทั้งหมด
-"""
-
 import streamlit as st
 import base64
 import os
-
 
 def _b64(filepath: str) -> str:
     with open(filepath, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
-
 def _mime_type(filepath: str) -> str:
-    """ตรวจ MIME type จาก header bytes จริง — ไม่ใช้นามสกุลไฟล์
-    เพราะบางไฟล์ตั้งชื่อ .png แต่จริงๆ เป็น JPEG"""
+    """ตรวจ MIME type จาก header bytes จริง"""
     with open(filepath, "rb") as f:
         header = f.read(8)
     if header[:2] == b'\xff\xd8':
@@ -23,26 +16,13 @@ def _mime_type(filepath: str) -> str:
         return "image/png"
     if header[:4] == b'RIFF':
         return "image/webp"
-    return "image/jpeg"  # fallback
-
+    return "image/jpeg"
 
 def _find_file(candidates: list) -> str | None:
     for f in candidates:
         if os.path.exists(f):
             return f
     return None
-
-
-def get_hero_bg_css(fallback_url: str = "") -> str:
-    """คืน CSS background-image — ใช้ไฟล์ local ก่อน ถ้าไม่มีใช้ URL"""
-    bg = _find_file(["background.jpg", "background.png", "background.webp"])
-    if bg:
-        mime = _mime_type(bg)
-        return f"url('data:{mime};base64,{_b64(bg)}')"
-    if fallback_url:
-        return f"url('{fallback_url}')"
-    return "linear-gradient(135deg,#1A365D 0%,#2C5282 100%)"
-
 
 def apply_custom_style():
     """เรียกครั้งเดียวในทุกหน้า — ฝัง CSS ทั้งหมด"""
@@ -58,7 +38,7 @@ def apply_custom_style():
     logo_css = ""
     if logo_file:
         b64  = _b64(logo_file)
-        mime = _mime_type(logo_file)   # ✅ ตรวจ MIME จาก bytes จริง ไม่ใช่นามสกุล
+        mime = _mime_type(logo_file)
         logo_css = f"""
             background-image: url("data:{mime};base64,{b64}");
             background-repeat: no-repeat;
@@ -66,6 +46,9 @@ def apply_custom_style():
             background-size: 200px auto;
             padding-top: 230px !important;
         """
+    else:
+        # ระบบจะแจ้งเตือนใน Sidebar ถ้าหาไฟล์โลโก้ไม่เจอ
+        st.sidebar.warning("⚠️ ไม่พบไฟล์โลโก้ในระบบ กรุณาตรวจสอบชื่อไฟล์รูปภาพ")
 
     st.markdown(f"""
     <style>
@@ -81,10 +64,10 @@ def apply_custom_style():
     header[data-testid="stHeader"]     {{ background-color: #1A2228; }}
 
     /* ═══════════════════════════════════════
-       SIDEBAR
+       SIDEBAR (ทำให้เป็นสีเดียวกันทั้งหมด)
     ═══════════════════════════════════════ */
     [data-testid="stSidebar"] > div:first-child {{
-        background: linear-gradient(180deg, #1A365D 0%, #0F2137 100%);
+        background: #1A365D !important; /* ใช้สีพื้นทึบสีเดียวให้กลืนกันทั้งหมด */
     }}
     [data-testid="stSidebar"] * {{
         color: white !important;
@@ -93,7 +76,7 @@ def apply_custom_style():
     /* ── Logo + Nav ── */
     div[data-testid="stSidebarNav"] {{
         {logo_css}
-        background-color: #1A365D;
+        background-color: transparent !important; /* ตั้งเป็นโปร่งใสไม่ให้บังสีหลัก */
     }}
 
     /* ลบ background ออกจาก element ลูก ไม่ให้ทับรูปโลโก้ */
@@ -123,7 +106,6 @@ def apply_custom_style():
     /* ═══════════════════════════════════════
        WIDGETS
     ═══════════════════════════════════════ */
-    /* Dropdown */
     div[data-baseweb="select"] > div {{
         background-color: #262730 !important;
         color: white !important;
@@ -131,7 +113,6 @@ def apply_custom_style():
         border-radius: 8px !important;
     }}
 
-    /* Number Input */
     div[data-testid="stNumberInput"] input {{
         color: #ffffff !important;
         background-color: #262730 !important;
@@ -146,7 +127,6 @@ def apply_custom_style():
         color: white !important;
     }}
 
-    /* Sidebar dropdown */
     [data-testid="stSidebar"] div[data-baseweb="select"] > div {{
         background-color: rgba(255,255,255,0.08) !important;
         color: white !important;
@@ -172,9 +152,6 @@ def apply_custom_style():
         border: 1px solid rgba(0,0,0,0.06);
     }}
 
-    /* ═══════════════════════════════════════
-       DARK STAT BOX
-    ═══════════════════════════════════════ */
     .dark-stat-box {{
         background-color: #262730;
         border: 1px solid rgba(255,255,255,0.08);
