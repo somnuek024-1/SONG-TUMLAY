@@ -9,11 +9,11 @@ import os
 
 def _b64(filepath: str) -> str:
     with open(filepath, "rb") as f:
-        return base64.b64encode(f.read()).decode("utf-8")
+        return base64.b64encode(f.read()).decode()
 
 
 def _mime_type(filepath: str) -> str:
-    """ตรวจ MIME type จาก header bytes จริง — ไม่ใช้นามสกุลไฟล์"""
+    """ตรวจ MIME type จาก header bytes จริง"""
     with open(filepath, "rb") as f:
         header = f.read(8)
     if header[:2] == b'\xff\xd8':
@@ -22,7 +22,7 @@ def _mime_type(filepath: str) -> str:
         return "image/png"
     if header[:4] == b'RIFF':
         return "image/webp"
-    return "image/jpeg"  # fallback
+    return "image/jpeg"
 
 
 def _find_file(candidates: list) -> str | None:
@@ -33,7 +33,6 @@ def _find_file(candidates: list) -> str | None:
 
 
 def get_hero_bg_css(fallback_url: str = "") -> str:
-    """คืน CSS background-image — ใช้ไฟล์ local ก่อน ถ้าไม่มีใช้ URL"""
     bg = _find_file(["background.jpg", "background.png", "background.webp"])
     if bg:
         mime = _mime_type(bg)
@@ -62,10 +61,9 @@ def apply_custom_style():
             background-image: url("data:{mime};base64,{b64}");
             background-repeat: no-repeat;
             background-position: center top 20px;
-            /* ✅ ขยายขนาดโลโก้ให้กว้าง 90% ของพื้นที่ Sidebar */
-            background-size: 90% auto; 
-            /* ✅ ดันเมนูลงมาอีกนิดเพื่อหลบโลโก้ที่ใหญ่ขึ้น */
-            padding-top: 260px !important; 
+            /* ปรับให้โลโก้กว้าง 85% ของแถบ เพื่อให้ใหญ่เต็มตาแต่ไม่ล้น */
+            background-size: 85% auto; 
+            padding-top: 260px !important;
         """
 
     st.markdown(f"""
@@ -77,33 +75,28 @@ def apply_custom_style():
         font-family: 'Sarabun', sans-serif;
     }}
 
-    /* ── Dark Background ── */
     [data-testid="stAppViewContainer"] {{ background-color: #1A2228; }}
-    header[data-testid="stHeader"]     {{ background-color: #1A2228; }}
+    header[data-testid="stHeader"]     {{ background-color: transparent; }}
 
     /* ═══════════════════════════════════════
-       SIDEBAR (สีน้ำเงินเข้มสีเดียวทั้งแผง)
+       SIDEBAR (แก้ปัญหากรอบสี่เหลี่ยมแยกสี)
     ═══════════════════════════════════════ */
-    section[data-testid="stSidebar"] {{
-        background-color: #1A365D !important;
-        border-right: none !important;
+    /* 1. บังคับสีพื้นหลัง Sidebar ตัวแม่ให้เป็นสีน้ำเงินเข้มสีเดียวทั้งแผ่น */
+    [data-testid="stSidebar"] > div:first-child {{
+        background: #1A365D !important;
     }}
     
-    section[data-testid="stSidebar"] > div {{
-        background-color: transparent !important;
-    }}
-
     [data-testid="stSidebar"] * {{
         color: white !important;
     }}
 
-    /* ── Logo + Nav ── */
+    /* 2. ทำให้กล่องโลโก้ (stSidebarNav) โปร่งใส เพื่อให้กลืนไปกับสีหลัก */
     div[data-testid="stSidebarNav"] {{
         {logo_css}
-        background-color: transparent !important;
+        background-color: transparent !important; 
     }}
 
-    /* ลบ background ออกจาก element ลูก ไม่ให้ทับรูปโลโก้ */
+    /* ลบสีพื้นหลังของกล่องย่อยๆ ออกให้หมด */
     div[data-testid="stSidebarNav"] ul,
     div[data-testid="stSidebarNav"] li,
     div[data-testid="stSidebarNav"] a,
@@ -159,8 +152,7 @@ def apply_custom_style():
     /* ═══════════════════════════════════════
        TYPOGRAPHY
     ═══════════════════════════════════════ */
-    .stMarkdown p, .stMarkdown li,
-    h1, h2, h3, label, p {{
+    .stMarkdown p, .stMarkdown li, h1, h2, h3, label, p {{
         color: #ffffff !important;
     }}
 
