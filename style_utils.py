@@ -12,7 +12,7 @@ def get_base64_of_bin_file(bin_file):
 
 def find_logo_file():
     """ค้นหาไฟล์โลโก้ (ลำดับความสำคัญ)"""
-    candidates = ["logonobackground.png", "logo.png", "logo.jpg", "logo.jpeg"]
+    candidates = ["logo.png"]
     for filename in candidates:
         if os.path.exists(filename):
             return filename
@@ -49,10 +49,8 @@ def apply_custom_style():
 
     # ✅ แก้ไขชื่อไฟล์โลโก้ให้ตรงกับไฟล์จริง
     logo_file = _find_file([
-        "logonobackgroundoriginal.png",
-        "logonobackground.png",
         "logo.png",
-        "logo.jpg",
+        
     ])
     logo_css = ""
     
@@ -237,3 +235,4 @@ def apply_custom_style():
     }}
     </style>
     """, unsafe_allow_html=True)
+
