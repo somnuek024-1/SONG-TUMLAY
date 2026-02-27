@@ -12,6 +12,20 @@ def _b64(filepath: str) -> str:
         return base64.b64encode(f.read()).decode()
 
 
+def _mime_type(filepath: str) -> str:
+    """ตรวจ MIME type จาก header bytes จริง — ไม่ใช้นามสกุลไฟล์
+    เพราะบางไฟล์ตั้งชื่อ .png แต่จริงๆ เป็น JPEG"""
+    with open(filepath, "rb") as f:
+        header = f.read(8)
+    if header[:2] == b'\xff\xd8':
+        return "image/jpeg"
+    if header[:8] == b'\x89PNG\r\n\x1a\n':
+        return "image/png"
+    if header[:4] == b'RIFF':
+        return "image/webp"
+    return "image/jpeg"  # fallback
+
+
 def _find_file(candidates: list) -> str | None:
     for f in candidates:
         if os.path.exists(f):
@@ -23,8 +37,8 @@ def get_hero_bg_css(fallback_url: str = "") -> str:
     """คืน CSS background-image — ใช้ไฟล์ local ก่อน ถ้าไม่มีใช้ URL"""
     bg = _find_file(["background.jpg", "background.png", "background.webp"])
     if bg:
-        ext = bg.split(".")[-1].replace("jpg", "jpeg")
-        return f"url('data:image/{ext};base64,{_b64(bg)}')"
+        mime = _mime_type(bg)
+        return f"url('data:{mime};base64,{_b64(bg)}')"
     if fallback_url:
         return f"url('{fallback_url}')"
     return "linear-gradient(135deg,#1A365D 0%,#2C5282 100%)"
@@ -35,7 +49,7 @@ def apply_custom_style():
 
     # ── โลโก้ ──
     logo_file = _find_file([
-        "logo.png",                       # ✅ ไฟล์หลักที่ไม่มีพื้นหลัง
+        "logo.png",
         "logonobackgroundoriginal.png",
         "logonobackground.png",
         "logo.jpg",
@@ -43,9 +57,10 @@ def apply_custom_style():
 
     logo_css = ""
     if logo_file:
-        b64 = _b64(logo_file)
+        b64  = _b64(logo_file)
+        mime = _mime_type(logo_file)   # ✅ ตรวจ MIME จาก bytes จริง ไม่ใช่นามสกุล
         logo_css = f"""
-            background-image: url("data:image/png;base64,{b64}");
+            background-image: url("data:{mime};base64,{b64}");
             background-repeat: no-repeat;
             background-position: center top 20px;
             background-size: 200px auto;
